@@ -1,0 +1,6 @@
+
+*.sig
+*.el
+.DS_Store
+*.m~
+*.spec~
