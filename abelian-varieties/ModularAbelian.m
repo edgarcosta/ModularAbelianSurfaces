@@ -41,9 +41,11 @@ intrinsic PeriodsWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
     such that the isogenous abelian variety has endomorphism ring equal to the maximal order
 }
     QQ := RationalsExtra(Precision(BaseRing(P)));
-    GeoRep := GeometricEndomorphismRepresentation(P, QQ : UpperBound:=1);
-    one := GeoRep[1][2];
-    gen := GeoRep[2][2];
+    GeoEndoRep := GeometricEndomorphismRepresentation(P, QQ);
+    F, h := InclusionOfBaseExtra(BaseRing(GeoEndoRep[1][1]));
+    GeoEndoRepBase := EndomorphismRepresentation(GeoEndoRep, F, h);
+    one := GeoEndoRepBase[1][2];
+    gen := GeoEndoRepBase[2][2];
     assert one eq 1;
     minpoly := MinimalPolynomial(gen); //need to make (D + sqrt(D)) where D is the discriminant
     K<a> := NumberField(minpoly);
@@ -60,12 +62,13 @@ intrinsic PeriodsWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
     assert bool;
     S, P, Q := SmithForm(Matrix(Integers(), kernel));
     P2 := Submatrix(AuxP*Matrix(CC, P^-1), 1, 5, 2, 4);
-    GeoRep2 := GeometricEndomorphismRepresentation(P2, QQ : UpperBound:=1);
-    comp := MinimalPolynomial(GeoRep2[2][2]);
-    exp := MinimalPolynomial(Integers(K).2);
-    exp2 := MinimalPolynomial(-Integers(K).2);
-    require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
-    return P2, GeoRep2;
+    GeoEndoRep2 := GeometricEndomorphismRepresentation(P2, QQ);
+    GeoEndoRepBase2 := EndomorphismRepresentation(GeoEndoRep2, F, h);
+    //comp := MinimalPolynomial(GeoEndoRepBase2[2][1]);
+    //exp := MinimalPolynomial(Integers(K).2);
+    //exp2 := MinimalPolynomial(-Integers(K).2);
+    //require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
+    return P2, GeoEndoRepBase2;
 end intrinsic;
 
 
