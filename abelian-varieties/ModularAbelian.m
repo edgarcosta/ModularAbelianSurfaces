@@ -20,13 +20,14 @@ end intrinsic;
 
 // use hecke to get the number of correct digits
 intrinsic PeriodsFromModSymb(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
-{ FIXME }
+{ Computes the normalized periods }
     vprint ModAbVarRec: Sprintf("Computing periods, prec:=%o, ncoeffs:=%o", prec, ncoeffs);
     vprintf ModAbVarRec: Sprintf("%o...", f);
     default_prec := Precision(GetDefaultRealField());
     // this is how we control the precision of the output of Periods
     SetDefaultRealFieldPrecision(prec + 10);
     vtime ModAbVarRec:
+    // PeriodMapping gives the periods up to isogeny
     //pi_f := PeriodMapping(f, ncoeffs);
     //P:= [pi_f(b) : b in Basis(f)];
     P := Periods(f, ncoeffs);
