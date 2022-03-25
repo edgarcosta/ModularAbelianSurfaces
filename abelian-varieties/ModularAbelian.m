@@ -7,7 +7,7 @@ end intrinsic;
 
 
 intrinsic NormalizedPeriods(P::ModMatFldElt : prec:=80) -> ModMatFldElt
-{ FIXME }
+{ this normalizes  }
     CC := ComplexFieldExtra(prec);
     // Change convention
     P := Transpose(ChangeRing(P, CC));
@@ -27,13 +27,15 @@ intrinsic PeriodsFromModSymb(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldE
     // this is how we control the precision of the output of Periods
     SetDefaultRealFieldPrecision(prec + 10);
     vtime ModAbVarRec:
-    pi_f := PeriodMapping(f, ncoeffs);
-    P:= [pi_f(b) : b in Basis(f)];
+    //pi_f := PeriodMapping(f, ncoeffs);
+    //P:= [pi_f(b) : b in Basis(f)];
+    P := Periods(f, ncoeffs);
     // undo the default_prec
     SetDefaultRealFieldPrecision(default_prec);
     vprint ModAbVarRec: "Done";
     return NormalizedPeriods(Matrix(P) : prec:=prec);
 end intrinsic;
+
 
 
 
@@ -93,26 +95,34 @@ intrinsic PeriodsWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
 end intrinsic;
 
 
-intrinsic ReconstructGenus2Curve(P::ModMatFldElt : tries:=10) -> ModMatFldElt, SeqEnum
+intrinsic ReconstructGenus2Curve(P::ModMatFldElt : D:=[-10..10], Rational:=true) -> ModMatFldElt, SeqEnum
 { FIXME }
-    for i in [1..tries] do
-        vprintf ModAbVarRec: "Finding a polarization...";
-        vtime ModAbVarRec:
-        bool, pol := SomePrincipalPolarization(P);
-        vprint ModAbVarRec: "Done";
-        assert bool;
-        CC := BaseRing(P);
-        QQ := RationalsExtra(Precision(CC));
+    vprintf ModAbVarRec: "Finding a polarizations %o...", D;
+    vtime ModAbVarRec:
+    polarizations := SomePrincipalPolarizations(P : D:=D);
+    CC := BaseRing(P);
+    QQ := RationalsExtra(Precision(CC));
+    vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+    for pol in polarizations do
         E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
+        try
         vprintf ModAbVarRec: "Reconstructing curve...";
         vtime ModAbVarRec:
         C := ReconstructCurve(P*Transpose(ChangeRing(F, CC)), QQ);
         vprint ModAbVarRec: "Done";
-        if BaseField(C) cmpeq Rationals() then
-            return true, C;
+        if Rational then
+            if BaseField(C) cmpeq Rationals() then
+                return true, C;
+            else
+                vprint ModAbVarRec: "Not over QQ";
+                vprint ModAbVarRec: IgusaInvariants(C);
+            end if;
         else
-            vprint ModAbVarRec: "Not over QQ";
+            return true, C;
         end if;
+        catch e
+            vprint ModAbVarRec: "Failed :(";
+        end try;
     end for;
     return false;
 end intrinsic;
