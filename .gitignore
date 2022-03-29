@@ -4,3 +4,5 @@
 .DS_Store
 *.m~
 *.spec~
+equations/ModSym/input_data/*
+equations/ModSym/tmp.m
