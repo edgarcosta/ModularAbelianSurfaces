@@ -6,3 +6,8 @@
 *.spec~
 equations/ModSym/input_data/*
 equations/ModSym/tmp.m
+equations/ModSym/output_data/7.168.3.1
+equations/ModSym/output_data/7.168.3.2
+equations/ModSym/output_data/7.336.3.1
+equations/ModSym/output_data/7.336.3.2
+equations/ModSym/output_data/7.336.3.3
