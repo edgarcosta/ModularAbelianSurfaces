@@ -6,9 +6,9 @@ intrinsic GetDimension2Factors(N) -> SeqEnum
 end intrinsic;
 
 
-intrinsic NormalizedPeriods(P::ModMatFldElt : prec:=80) -> ModMatFldElt
+intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
 { this normalizes  }
-    CC := ComplexFieldExtra(prec);
+    CC := ComplexFieldExtra(Precision(BaseRing(P)));
     // Change convention
     P := Transpose(ChangeRing(P, CC));
     g := #Rows(P);
@@ -19,8 +19,8 @@ intrinsic NormalizedPeriods(P::ModMatFldElt : prec:=80) -> ModMatFldElt
 end intrinsic;
 
 // use hecke to get the number of correct digits
-intrinsic PeriodsFromModSymb(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
-{ Computes the normalized periods }
+intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
+{ Compute the normalized period matrix associated to f}
     vprint ModAbVarRec: Sprintf("Computing periods, prec:=%o, ncoeffs:=%o", prec, ncoeffs);
     vprintf ModAbVarRec: Sprintf("%o...", f);
     default_prec := Precision(GetDefaultRealField());
@@ -28,13 +28,23 @@ intrinsic PeriodsFromModSymb(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldE
     SetDefaultRealFieldPrecision(prec + 10);
     vtime ModAbVarRec:
     // PeriodMapping gives the periods up to isogeny
-    //pi_f := PeriodMapping(f, ncoeffs);
-    //P:= [pi_f(b) : b in Basis(f)];
-    P := Periods(f, ncoeffs);
+    pi_f := PeriodMapping(f, ncoeffs);
+    // Apply it to the whole space
+    Pfull := Transpose(Matrix([pi_f(b) : b in Basis(CuspidalSubspace(AmbientSpace(f)))]));
+
+    // figure out the relations
+    kernel, b := IntegralRightKernel(Pfull);
+    S, P, Q := SmithForm(Matrix(Integers(), kernel));
+
+    // extract the correct period matrix
+    CC := BaseRing(Pfull);
+    PfullNew := Pfull*Matrix(CC, P^-1);
+    PNew := Submatrix(PfullNew, 1, 1+ Ncols(PfullNew) - Dimension(f), 2, Dimension(f));
     // undo the default_prec
     SetDefaultRealFieldPrecision(default_prec);
     vprint ModAbVarRec: "Done";
-    return NormalizedPeriods(Matrix(P) : prec:=prec);
+    // normalizes it
+    return NormalizedPeriodMatrix(PNew);
 end intrinsic;
 
 
@@ -42,7 +52,7 @@ end intrinsic;
 
 
 
-intrinsic PeriodsWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
+intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
 {
     Given a period matrix P for a dim 2 modular forms space with trivial character
     such that the coefficient ring index is > 1, return a period matrix for an isogenous abelian variety
@@ -134,8 +144,8 @@ intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMat
 {
     FIXME
 }
-    P := PeriodsFromModSymb(f : prec:=prec, ncoeffs:=ncoeffs);
-    P2, G2 := PeriodsWithMaximalOrder(P);
+    P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+    P2, G2 := PeriodMatrixWithMaximalOrder(P);
     return ReconstructGenus2Curve(P2);
 end intrinsic;
 
