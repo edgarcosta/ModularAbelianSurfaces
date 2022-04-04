@@ -123,7 +123,7 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
 end intrinsic;
 
 
-intrinsic ReconstructGenus2Curve(P::ModMatFldElt : D:=[-50..50], Rational:=true) -> BoolElt, Crv
+intrinsic ReconstructGenus2Curve(P::ModMatFldElt : D:=[-10..10], Rational:=true) -> BoolElt, Crv
 { FIXME }
   vprintf ModAbVarRec: "Finding a polarizations %o...", D;
   vtime ModAbVarRec:
