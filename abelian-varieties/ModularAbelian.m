@@ -6,6 +6,8 @@ intrinsic GetDimension2Factors(N) -> SeqEnum
 end intrinsic;
 
 
+/* 
+ * No Longer need this
 intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
 { this normalizes  }
     CC := ComplexFieldExtra(Precision(BaseRing(P)));
@@ -17,6 +19,7 @@ intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
     P := HorizontalJoin(P2, P1);
     return P;
 end intrinsic;
+*/
 
 // use hecke to get the number of correct digits
 intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
@@ -31,6 +34,8 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
     pi_f := PeriodMapping(f, ncoeffs);
     // Apply it to the whole space
     Pfull := Transpose(Matrix([pi_f(b) : b in Basis(CuspidalSubspace(AmbientSpace(f)))]));
+    CC := ComplexFieldExtra(Precision(BaseRing(Pfull)));
+    Pfull := Matrix(CC, Pfull);
 
     // figure out the relations
     kernel, b := IntegralRightKernel(Pfull);
@@ -43,8 +48,7 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
     // undo the default_prec
     SetDefaultRealFieldPrecision(default_prec);
     vprint ModAbVarRec: "Done";
-    // normalizes it
-    return NormalizedPeriodMatrix(PNew);
+    return PNew;
 end intrinsic;
 
 
