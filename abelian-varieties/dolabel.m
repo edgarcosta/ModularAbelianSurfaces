@@ -12,6 +12,7 @@ try
   assert b;
   f, g := HyperellipticPolynomials(MinimalWeierstrassModel(H));
 catch e
+  WriteStderr(e);
   exit 1;
 end try;
 StripWhiteSpace(Sprintf("%o:[%o,%o]", label, Eltseq(f), Eltseq(g)));
