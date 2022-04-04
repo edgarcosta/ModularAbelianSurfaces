@@ -123,14 +123,26 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
 end intrinsic;
 
 
-intrinsic ReconstructGenus2Curve(P::ModMatFldElt : D:=[-10..10], Rational:=true) -> BoolElt, Crv
+intrinsic ReconstructGenus2Curve(P::ModMatFldElt : D:=[-50..50], Rational:=true) -> BoolElt, Crv
 { FIXME }
   vprintf ModAbVarRec: "Finding a polarizations %o...", D;
   vtime ModAbVarRec:
   polarizations := SomePrincipalPolarizations(P : D:=D);
+  vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+  if #polarizations eq 0 then
+    b := D[1]; e := D[#D];
+    if (e - b + 1) eq #D then
+      vprintf ModAbVarRec: "increasing D = %o", D;
+      D := [b - #D div 2 .. e + #D div 2];
+      vprintf ModAbVarRec: "to D = %o\n", D;
+      vprintf ModAbVarRec: "Finding a polarizations %o...", D;
+      vtime ModAbVarRec:
+      polarizations := SomePrincipalPolarizations(P : D:=D);
+      vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+    end if;
+  end if;
   CC := BaseRing(P);
   QQ := RationalsExtra(Precision(CC));
-  vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
   for pol in polarizations do
     E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
     try
