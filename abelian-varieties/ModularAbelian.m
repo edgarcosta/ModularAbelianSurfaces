@@ -6,9 +6,24 @@ intrinsic GetDimension2Factors(N) -> SeqEnum
 end intrinsic;
 
 
-intrinsic NormalizedPeriods(P::ModMatFldElt : prec:=80) -> ModMatFldElt
-{ FIXME }
-    CC := ComplexFieldExtra(prec);
+intrinsic WriteStderr(s::MonStgElt)
+{ write to stderr }
+  E := Open("/dev/stderr", "w");
+  Write(E, s);
+  Flush(E);
+end intrinsic;
+
+
+intrinsic WriteStderr(e::Err)
+{ write to stderr }
+  WriteStderr(Sprint(e) cat "\n");
+end intrinsic;
+
+/* 
+ * No Longer need this
+intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
+{ this normalizes  }
+    CC := ComplexFieldExtra(Precision(BaseRing(P)));
     // Change convention
     P := Transpose(ChangeRing(P, CC));
     g := #Rows(P);
@@ -17,114 +32,150 @@ intrinsic NormalizedPeriods(P::ModMatFldElt : prec:=80) -> ModMatFldElt
     P := HorizontalJoin(P2, P1);
     return P;
 end intrinsic;
+*/
 
 // use hecke to get the number of correct digits
-intrinsic PeriodsFromModSymb(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
-{ FIXME }
-    vprint ModAbVarRec: Sprintf("Computing periods, prec:=%o, ncoeffs:=%o", prec, ncoeffs);
-    vprintf ModAbVarRec: Sprintf("%o...", f);
-    default_prec := Precision(GetDefaultRealField());
-    // this is how we control the precision of the output of Periods
-    SetDefaultRealFieldPrecision(prec + 10);
-    vtime ModAbVarRec:
-    pi_f := PeriodMapping(f, ncoeffs);
-    P:= [pi_f(b) : b in Basis(f)];
-    // undo the default_prec
-    SetDefaultRealFieldPrecision(default_prec);
-    vprint ModAbVarRec: "Done";
-    return NormalizedPeriods(Matrix(P) : prec:=prec);
+intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
+{ Compute the normalized period matrix associated to f}
+  vprint ModAbVarRec: Sprintf("Computing periods, prec:=%o, ncoeffs:=%o", prec, ncoeffs);
+  vprintf ModAbVarRec: Sprintf("%o...", f);
+  default_prec := Precision(GetDefaultRealField());
+  // this is how we control the precision of the output of Periods
+  SetDefaultRealFieldPrecision(prec + 10);
+  vtime ModAbVarRec:
+  // PeriodMapping gives the periods up to isogeny
+  pi_f := PeriodMapping(f, ncoeffs);
+  // Apply it to the whole space
+  Pfull := Transpose(Matrix([pi_f(b) : b in Basis(CuspidalSubspace(AmbientSpace(f)))]));
+  CC := ComplexFieldExtra(Precision(BaseRing(Pfull)));
+  Pfull := Matrix(CC, Pfull);
+
+  // figure out the relations
+  kernel, b := IntegralRightKernel(Pfull);
+  S, P, Q := SmithForm(Matrix(Integers(), kernel));
+
+  // extract the correct period matrix
+  CC := BaseRing(Pfull);
+  PfullNew := Pfull*Matrix(CC, P^-1);
+  PNew := Submatrix(PfullNew, 1, 1+ Ncols(PfullNew) - Dimension(f), 2, Dimension(f));
+  // undo the default_prec
+  SetDefaultRealFieldPrecision(default_prec);
+  vprint ModAbVarRec: "Done";
+  return PNew;
 end intrinsic;
 
 
 
 
 
-intrinsic PeriodsWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
+
+intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
 {
-    Given a period matrix P for a dim 2 modular forms space with trivial character
-    such that the coefficient ring index is > 1, return a period matrix for an isogenous abelian variety
-    such that the isogenous abelian variety has endomorphism ring equal to the maximal order
+  Given a period matrix P for a dim 2 modular forms space with trivial character
+  such that the coefficient ring index is > 1, return a period matrix for an isogenous abelian variety
+  such that the isogenous abelian variety has endomorphism ring equal to the maximal order
 }
-    vprintf ModAbVarRec: "Extending lattice...";
-    QQ := RationalsExtra(Precision(BaseRing(P)));
-    vprint ModAbVarRec: "\nComputing GeometricEndomorphismRepresentation...";
-    vtime ModAbVarRec:
-    GeoEndoRep := GeometricEndomorphismRepresentation(P, QQ);
-    F, h := InclusionOfBaseExtra(BaseRing(GeoEndoRep[1][1]));
-    GeoEndoRepBase := EndomorphismRepresentation(GeoEndoRep, F, h);
-    vprint ModAbVarRec:GeoEndoRep;
-    vprint ModAbVarRec:GeoEndoRepBase;
-    vprint ModAbVarRec: "Done";
-    require #GeoEndoRepBase eq 2: Sprintf("This does not seem to be GL2-type, dim End A = %o", #GeoEndoRepBase);
-    one := GeoEndoRepBase[1][2];
-    gen := GeoEndoRepBase[2][2];
-    assert one eq 1;
-    minpoly := MinimalPolynomial(gen); //need to make (D + sqrt(D)) where D is the discriminant
-    K<a> := NumberField(minpoly);
-    D:= Discriminant(Integers(K));
-    x := Parent(minpoly).1;
-    sqrtDpoly := x^2 - D;
-    rts := Roots(sqrtDpoly, K);
-    rt := rts[1][1];
-    sqrtD := &+[c*gen^(i-1) : i->c in Eltseq(rt)];
-    DpSqrtD := D*one + sqrtD;
-    CC := BaseRing(P);
-    AuxP := Transpose(Matrix(Rows(Transpose(2*P)) cat Rows(Transpose(P*Matrix(CC, DpSqrtD)))));
-    kernel, bool := IntegralRightKernel(AuxP);
-    assert bool;
-    S, P, Q := SmithForm(Matrix(Integers(), kernel));
-    P2 := Submatrix(AuxP*Matrix(CC, P^-1), 1, 5, 2, 4);
-    vprintf ModAbVarRec: "Computing GeometricEndomorphismRepresentation...";
-    vtime ModAbVarRec:
-    GeoEndoRep2 := GeometricEndomorphismRepresentation(P2, QQ);
-    vprint ModAbVarRec: "Done";
-    require #GeoEndoRep2 ge 2: Sprintf("This does not seem to be GL2-type, dim End newA_bar = %o", #GeoEndoRep2);
-    F, h := InclusionOfBaseExtra(BaseRing(GeoEndoRep2[1][1]));
-    GeoEndoRepBase2 := EndomorphismRepresentation(GeoEndoRep2, F, h);
-    vprint ModAbVarRec:GeoEndoRep2;
-    vprint ModAbVarRec:GeoEndoRepBase2;
-    require #GeoEndoRepBase2 ge 2: Sprintf("This does not seem to be GL2-type, dim End newA = %o", #GeoEndoRepBase2);
-    //comp := MinimalPolynomial(GeoEndoRepBase2[2][1]);
-    //exp := MinimalPolynomial(Integers(K).2);
-    //exp2 := MinimalPolynomial(-Integers(K).2);
-    //require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
-    vprint ModAbVarRec: "Done";
-    return P2, GeoEndoRepBase2;
+  vprintf ModAbVarRec: "Extending lattice...";
+  QQ := RationalsExtra(Precision(BaseRing(P)));
+  vprint ModAbVarRec: "\nComputing GeometricEndomorphismRepresentation...";
+  vtime ModAbVarRec:
+  GeoEndoRep := GeometricEndomorphismRepresentation(P, QQ);
+  F, h := InclusionOfBaseExtra(BaseRing(GeoEndoRep[1][1]));
+  GeoEndoRepBase := EndomorphismRepresentation(GeoEndoRep, F, h);
+  vprint ModAbVarRec:GeoEndoRep;
+  vprint ModAbVarRec:GeoEndoRepBase;
+  vprint ModAbVarRec: "Done";
+  require #GeoEndoRepBase eq 2: Sprintf("This does not seem to be GL2-type, dim End A = %o", #GeoEndoRepBase);
+  one := GeoEndoRepBase[1][2];
+  gen := GeoEndoRepBase[2][2];
+  assert one eq 1;
+  minpoly := MinimalPolynomial(gen); //need to make (D + sqrt(D)) where D is the discriminant
+  K<a> := NumberField(minpoly);
+  D:= Discriminant(Integers(K));
+  x := Parent(minpoly).1;
+  sqrtDpoly := x^2 - D;
+  rts := Roots(sqrtDpoly, K);
+  rt := rts[1][1];
+  sqrtD := &+[c*gen^(i-1) : i->c in Eltseq(rt)];
+  DpSqrtD := D*one + sqrtD;
+  CC := BaseRing(P);
+  AuxP := Transpose(Matrix(Rows(Transpose(2*P)) cat Rows(Transpose(P*Matrix(CC, DpSqrtD)))));
+  kernel, bool := IntegralRightKernel(AuxP);
+  assert bool;
+  S, P, Q := SmithForm(Matrix(Integers(), kernel));
+  P2 := Submatrix(AuxP*Matrix(CC, P^-1), 1, 5, 2, 4);
+  vprintf ModAbVarRec: "Computing GeometricEndomorphismRepresentation...";
+  vtime ModAbVarRec:
+  GeoEndoRep2 := GeometricEndomorphismRepresentation(P2, QQ);
+  vprint ModAbVarRec: "Done";
+  require #GeoEndoRep2 ge 2: Sprintf("This does not seem to be GL2-type, dim End newA_bar = %o", #GeoEndoRep2);
+  F, h := InclusionOfBaseExtra(BaseRing(GeoEndoRep2[1][1]));
+  GeoEndoRepBase2 := EndomorphismRepresentation(GeoEndoRep2, F, h);
+  vprint ModAbVarRec:GeoEndoRep2;
+  vprint ModAbVarRec:GeoEndoRepBase2;
+  require #GeoEndoRepBase2 ge 2: Sprintf("This does not seem to be GL2-type, dim End newA = %o", #GeoEndoRepBase2);
+  //comp := MinimalPolynomial(GeoEndoRepBase2[2][1]);
+  //exp := MinimalPolynomial(Integers(K).2);
+  //exp2 := MinimalPolynomial(-Integers(K).2);
+  //require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
+  vprint ModAbVarRec: "Done";
+  return P2, GeoEndoRepBase2;
 end intrinsic;
 
 
-intrinsic ReconstructGenus2Curve(P::ModMatFldElt : tries:=10) -> ModMatFldElt, SeqEnum
+intrinsic ReconstructGenus2Curve(P::ModMatFldElt : D:=[-10..10], Rational:=true) -> BoolElt, Crv
 { FIXME }
-    for i in [1..tries] do
-        vprintf ModAbVarRec: "Finding a polarization...";
-        vtime ModAbVarRec:
-        bool, pol := SomePrincipalPolarization(P);
-        vprint ModAbVarRec: "Done";
-        assert bool;
-        CC := BaseRing(P);
-        QQ := RationalsExtra(Precision(CC));
-        E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
-        vprintf ModAbVarRec: "Reconstructing curve...";
-        vtime ModAbVarRec:
-        C := ReconstructCurve(P*Transpose(ChangeRing(F, CC)), QQ);
-        vprint ModAbVarRec: "Done";
+  vprintf ModAbVarRec: "Finding a polarizations %o...", D;
+  vtime ModAbVarRec:
+  polarizations := SomePrincipalPolarizations(P : D:=D);
+  vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+  if #polarizations eq 0 then
+    b := D[1]; e := D[#D];
+    if (e - b + 1) eq #D then
+      vprintf ModAbVarRec: "increasing D = %o", D;
+      D := [b - #D div 2 .. e + #D div 2];
+      vprintf ModAbVarRec: "to D = %o\n", D;
+      vprintf ModAbVarRec: "Finding a polarizations %o...", D;
+      vtime ModAbVarRec:
+      polarizations := SomePrincipalPolarizations(P : D:=D);
+      vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+    end if;
+  end if;
+  CC := BaseRing(P);
+  QQ := RationalsExtra(Precision(CC));
+  for pol in polarizations do
+    E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
+    try
+      vprintf ModAbVarRec: "Reconstructing curve...";
+      vtime ModAbVarRec:
+      C := ReconstructCurve(P*Transpose(ChangeRing(F, CC)), QQ);
+      vprint ModAbVarRec: "Done";
+      if Rational then
         if BaseField(C) cmpeq Rationals() then
             return true, C;
         else
             vprint ModAbVarRec: "Not over QQ";
+            vprint ModAbVarRec: IgusaInvariants(C);
         end if;
-    end for;
-    return false;
+      else
+        return true, C;
+      end if;
+    catch e
+      WriteStderr(e);
+      vprint ModAbVarRec: "Failed :(";
+    end try;
+  end for;
+  return false, _;
 end intrinsic;
 
 
 
-intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt, SeqEnum
+intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000) -> BoolElt, Crv
 {
     FIXME
 }
-    P := PeriodsFromModSymb(f : prec:=prec, ncoeffs:=ncoeffs);
-    P2, G2 := PeriodsWithMaximalOrder(P);
+    P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+    P2, G2 := PeriodMatrixWithMaximalOrder(P);
     return ReconstructGenus2Curve(P2);
 end intrinsic;
 
