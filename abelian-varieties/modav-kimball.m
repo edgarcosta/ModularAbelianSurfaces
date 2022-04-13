@@ -1,6 +1,3 @@
-AttachSpec("CHIMP/CHIMP.spec");
-AttachSpec("ModularCurves/abelian-varieties/spec");
-
 function PerMat(f : prec := 80, ncoeffs := 10000)
   SetDefaultRealFieldPrecision(prec + 10);
   C:=ComplexFieldExtra(prec);
