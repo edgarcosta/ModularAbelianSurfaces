@@ -1,8 +1,9 @@
 # Sage functions to compute genus 2 curves using a simplification of the
-# Mestre conic and cubic in terms of Igusa-Clebsch invariants due
+# Mestre conic and cubic in terms of Igusa-Clebsch invariants 
 # 
-# WARNING : this is a preliminary implementation and does not handle some
-# 	exceptional cases
+# WARNING : this is a preliminary implementation and only treats
+# 	construction of genus 2 curves which can be defined over Q
+#	such that the reduced automorphism group has odd order
 #
 # Kimball Martin - April 2022
 
@@ -33,10 +34,9 @@ def ICmestrecubic(ICs, xis):
 # given ICs, use the IC-simplified Mestre conic and cubic to generate a
 # genus 2 curve
 # INPUT : list of rational ICs : [I2, I4, I6, I10]
-# OUTPUT : 0 if Mestre conic is singular (curve has extra automorphisms)
+# OUTPUT : 0 if Mestre conic is singular (reduced automorphism group is even)
 #	 : -1 if Mestre conic has no rational point (curve not defined over Q)
 #	 : f(x) s.t. y^2 = f(x) is a rational curve with given ICs
-# TO DO : fix if Mestre conic is not-singular but curve has extra automorphisms
 
 def IC2g2(ICs):
   R.<x> = QQ[]
