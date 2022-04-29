@@ -127,6 +127,27 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   return P2, GeoEndoRepBase2;
 end intrinsic;
 
+intrinsic FindddPolarizizedCurve(P::ModMatFldElt: D:= [-10 .. 10]) -> ModMatFldElt
+{
+    Finds smallest (d,d) polarization (if there is one) of the modular abelian surface associated to P
+    Returns period matrix for the d-isogenous abelian variety which is principally polarized
+}   
+    polarizations := SomePolarizations(P : D := D);  
+    Zpol:= Matrix(Integers(), polarizations[1]);
+    E1, F1:= FrobeniusFormAlternating(Zpol);
+    for pol in polarizations do //find the (1,d) polarization with the smallest d
+        Zpol:= Matrix(Integers(), pol);
+        E, F:= FrobeniusFormAlternating(Zpol);
+        if E[1][3]/E[2][4] gt E1[1][3]/E1[2][4] or (E[1][3]/E[2][4] eq E1[1][3]/E1[2][4] and  E[1][3] lt E1[1][3]) then //pick the smaller polarization
+            E1 := E;
+            F1 := F;
+        end if;
+    end for;
+    Dscalar := Matrix([[1,0,0,0], [0,E1[1][3]/E1[2][4],0,0],[0,0,1,0],[0,0,0,1]]);
+    CC := BaseRing(P);
+    Pnew := P *Transpose(ChangeRing(Dscalar*F1, CC) );
+    return Pnew;
+end intrinsic;
 
 intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
 { FXIME: fill in doc }
@@ -149,7 +170,7 @@ intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
   return polarizations;
 end intrinsic;
 
-intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt, polarizations:SeqEnum, Rational:=true) -> BoolElt, Crv
+intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt, polarizations::SeqEnum : Rational:=true) -> BoolElt, Crv
 { FIXME }
   CC := BaseRing(P);
   QQ := RationalsExtra(Precision(CC));
@@ -249,7 +270,7 @@ end intrinsic;
 
 
 
-intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Crv
+intrinsic ReconstructRationalGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Crv
 {
     FIXME
     It fails if to find PP we throw a runtime error
@@ -258,11 +279,27 @@ intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..
     P2, G2 := PeriodMatrixWithMaximalOrder(P);
     polarizations := FindPrincipalPolarizations(P2 : D:=D);
     require #polarizations gt 0 : "No principal polarizations were found, perhaps increasing the D list might help you or not...";
-    b, f := ReconstructIsomorphicGenus2Curve(P2, polarizations);
+    b, C := ReconstructIsomorphicGenus2Curve(P2, polarizations);
     require b : "No curve over rationals was found";
-    return b, f;
+    return b, C;
 end intrinsic;
 
+intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Crv
+{
+    FIXME
+}
+    P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+    try 
+        b, C:= ReconstructRationalGenus2Curve(f);
+    catch e
+        P2, G2 := PeriodMatrixWithMaximalOrder(P);
+        P3 := FindddPolarizizedCurve(P2: D := D);
+        CC := BaseRing(P3);
+        QQ := RationalsExtra(Precision(CC));
+        C := ReconstructCurve(P3, QQ);
+    end try;
+    return C;
+end intrinsic;
 
 intrinsic MakeNewformModSym(level::RngIntElt, hecke_cutters::SeqEnum[Tup]) -> ModSym
 { FIXME }
