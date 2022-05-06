@@ -127,30 +127,36 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   return P2, GeoEndoRepBase2;
 end intrinsic;
 
-intrinsic FindddPolarizizedCurve(P::ModMatFldElt: D:= [-10 .. 10]) -> ModMatFldElt
+intrinsic IsogenousPolarizedCurves(P::ModMatFldElt: D:= [-10..10]) -> Assoc
 {
     Finds smallest (d,d) polarization (if there is one) of the modular abelian surface associated to P
     Returns period matrix for the d-isogenous abelian variety which is principally polarized
-}   
-    polarizations := SomePolarizations(P : D := D);  
-    Zpol:= Matrix(Integers(), polarizations[1]);
-    E1, F1:= FrobeniusFormAlternating(Zpol);
-    for pol in polarizations do //find the (1,d) polarization with the smallest d
-        Zpol:= Matrix(Integers(), pol);
-        E, F:= FrobeniusFormAlternating(Zpol);
-        if E[1][3]/E[2][4] gt E1[1][3]/E1[2][4] or (E[1][3]/E[2][4] eq E1[1][3]/E1[2][4] and  E[1][3] lt E1[1][3]) then //pick the smaller polarization
-            E1 := E;
-            F1 := F;
-        end if;
-    end for;
-    Dscalar := Matrix([[1,0,0,0], [0,E1[1][3]/E1[2][4],0,0],[0,0,1,0],[0,0,0,1]]);
-    CC := BaseRing(P);
-    Pnew := P *Transpose(ChangeRing(Dscalar*F1, CC) );
-    return Pnew;
+}
+  polarizations := SomePolarizations(P : D := D);
+  CC := BaseRing(P);
+  res := AssociativeArray();
+  for pol in polarizations do //find the (1,d) polarization with the smallest d
+    Zpol:= Matrix(Integers(), pol);
+    E, F:= FrobeniusFormAlternating(Zpol);
+    d := E[2, 4]/E[1, 3];
+    key := <d, E[1, 3]>;
+    Dscalar := Matrix([
+                 [1, 0, 0, 0],
+                 [0, 1/d, 0, 0],
+                 [0, 0, 1, 0],
+                 [0, 0, 0, 1]]);
+    Pnew := P *Transpose(ChangeRing(Dscalar*F, CC) );
+    b := IsDefined(res, key);
+    if not b then
+      res[key] := [];
+    end if;
+    Append(~res[key], Pnew);
+  end for;
+  return res;
 end intrinsic;
 
 intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
-{ FXIME: fill in doc }
+{ TODO: fill in doc }
   vprintf ModAbVarRec: "Finding a polarizations %o...", D;
   vtime ModAbVarRec:
   polarizations := SomePrincipalPolarizations(P : D:=D);
@@ -158,7 +164,7 @@ intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
   if #polarizations eq 0 then
     b := D[1]; e := D[#D];
     if (e - b + 1) eq #D then
-      vprintf ModAbVarRec: "increasing D = %o", D;
+      vprintf ModAbVarRec: "increasing D = %o ", D;
       D := [b - #D div 2 .. e + #D div 2];
       vprintf ModAbVarRec: "to D = %o\n", D;
       vprintf ModAbVarRec: "Finding a polarizations %o...", D;
@@ -171,7 +177,7 @@ intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
 end intrinsic;
 
 intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt, polarizations::SeqEnum : Rational:=true) -> BoolElt, Crv
-{ FIXME }
+{ TODO: fill in doc }
   CC := BaseRing(P);
   QQ := RationalsExtra(Precision(CC));
   for pol in polarizations do
@@ -185,11 +191,11 @@ intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt, polarizations::SeqEn
       // perhaps, because we have modified our period matrix in a nonstandard way
       // C := ReconstructCurve(newP, QQ);
       tau := SmallPeriodMatrix(newP);
-      igusa :=  AlgebraizedInvariants(tau, QQ);
-      C := HyperellipticCurveFromIgusaInvariants(igusa);
+      igusa := AlgebraizedInvariants(tau, QQ);
       vprint ModAbVarRec: "Done";
       if Rational then
-        if BaseField(C) cmpeq Rationals() then
+        if Universe(igusa) cmpeq Rationals() then
+            C := HyperellipticCurveFromIgusaInvariants(igusa);
             return true, C;
         else
             vprint ModAbVarRec: "Not over QQ";
@@ -208,64 +214,41 @@ end intrinsic;
 
 
 
-// EDGAR: we should use linear algebra over GF(2) to find the quadratic twist instead of what we do below
-
-function BigCRT(moduli)
-    oldmod := 1;
-    oldvals := [0];
-    for E in moduli do
-        m, sols := Explode(E);
-        print m;
-        newvals := [];
-        for sol in sols do
-            for ov in oldvals do
-                Append(~newvals,CRT([ov, sol], [oldmod, m]));
-            end for;
-        end for;
-        oldmod *:= m;
-        oldvals := newvals;
-    end for;
-    return [oldval - oldmod * (oldval div (oldmod div 2)) : oldval in oldvals];
-end function;
-
-// given two lists of primes find integers that are squares mod the first and non-squares mod the second
-function SquaresMod(mods, nonmods)
-    inp := [];
-    for m in mods do
-       Append(~inp, <m, [i : i in [0.. m-1] | KroneckerSymbol(i, m) eq 1 ]>);
-    end for;
-    for m in nonmods do
-       Append(~inp, <m, [i : i in [0.. m-1] | KroneckerSymbol(i, m) eq -1 ]>);
-    end for;
-    return BigCRT(inp);
-end function;
-
-function SmallestSquareMod(mods,nonmods)
-    L := SquaresMod(mods, nonmods);
-    L2 := [<Abs(l), l> : l in L];
-    return Sort(L2)[1][2];
-end function;
-
-intrinsic FindCorrectTwist(C::CrvHyp, f::ModSym : Bound:=100) -> RngIntElt
-{ ... }
-    M := ModularAbelianVariety(f);
-    D := Discriminant(C);
+intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=100) -> RngIntElt
+{ Find a quadratic twist such that C and f have the same L-function }
+    D := Integers()!Discriminant(C) * Level(f);
     N := Level(f);
-    sqps := [];
-    nsqps := [];
-    for p in PrimesUpTo(Bound) do
-        if (Numerator(D) mod p eq 0) or (N mod p eq 0) then 
-            print "skipping";
-            print p;
-            continue;
-        end if;
-        if EulerFactor(C,p) ne Reverse(FrobeniusPolynomial(M, p)) then
-            Append(~nsqps, p);
-        else
-            Append(~sqps, p);
-        end if;
+    badprimes := IndexedSet(PrimeDivisors(D) cat [-1]);
+    primes := IndexedSet(PrimesUpTo(Bound)) diff badprimes;
+    skipp := [];
+    twistdata := [];
+    splittingdata := [];
+    // this could be written without Bound and with a while loop
+    for p in primes do
+      vprintf ModAbVarRec: "p = %o\nEuler factor C ", p;
+      vtime ModAbVarRec:
+      efc := EulerFactor(C, p);
+      if IsZero(Coefficient(efc, 1)) then
+        // useless prime, as efc(x) = efc(-x)
+        Append(~skipp, p);
+        continue;
+      end if;
+      vprintf ModAbVarRec: "Euler factor f ", p;
+      vtime ModAbVarRec:
+      eff := Reverse(CharpolyOfFrobenius(f, p));
+      if efc eq eff then
+        Append(~twistdata, 0);
+      else
+        require Evaluate(efc, -Parent(efc).1) eq eff : Sprintf("is not a local quadratic twist at p=%o", p);
+        Append(~twistdata, 1);
+      end if;
+      Append(~splittingdata, [(KroneckerSymbol(q, p) eq -1) select 1 else 0 : q in badprimes]);
+      if Rank(Matrix(GF(2), splittingdata)) eq #badprimes then
+        break p;
+      end if;
     end for;
-    return SmallestSquareMod(sqps, nsqps);
+    sol := Solution(Transpose(Matrix(GF(2), splittingdata)), Vector(GF(2), twistdata));
+    return &*[badprimes[i]: i->e in Eltseq(sol) | not IsZero(e)];
 end intrinsic;
 
 
@@ -289,11 +272,14 @@ intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..
     FIXME
 }
     P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
-    try 
+    try
         b, C:= ReconstructRationalGenus2Curve(f);
     catch e
         P2, G2 := PeriodMatrixWithMaximalOrder(P);
-        P3 := FindddPolarizizedCurve(P2: D := D);
+        //FIXME!!!
+        assert false;
+        P3 := P2;
+        //P3 := FindddPolarizizedCurve(P2: D := D);
         CC := BaseRing(P3);
         QQ := RationalsExtra(Precision(CC));
         C := ReconstructCurve(P3, QQ);
