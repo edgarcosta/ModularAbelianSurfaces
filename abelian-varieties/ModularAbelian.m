@@ -127,7 +127,7 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   return P2, GeoEndoRepBase2;
 end intrinsic;
 
-intrinsic IsogenousPolarizedCurves(P::ModMatFldElt: D:= [-10..10]) -> Assoc
+intrinsic SomeIsogenousPrincipallyPolarized(P::ModMatFldElt: D:= [-10..10]) -> Assoc
 {
     Finds smallest (d,d) polarization (if there is one) of the modular abelian surface associated to P
     Returns period matrix for the d-isogenous abelian variety which is principally polarized
