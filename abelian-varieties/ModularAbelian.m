@@ -17,9 +17,37 @@ intrinsic WriteStderr(e::Err)
 end intrinsic;
 
 
-intrinsic Eltseq(C::CrvHyp)
+intrinsic Eltseq(C::CrvHyp) -> SeqEnum
+  {retunrns both hyperelliptic polynomials as SeqEnum}
   f, g := HyperellipticPolynomials(MinimalWeierstrassModel(C));
   return [Eltseq(f), Eltseq(g)];
+end intrinsic;
+
+
+intrinsic MachinePrint(C::CrvHyp[FldRat]) -> MonStgElt
+  { return Sprintf("%o", [Eltseq(f), Eltseq(g)]) where f and g are the defining polynomials}
+  return Sprintf("%o", Eltseq(C));
+end intrinsic;
+
+intrinsic MachinePrint(v::ModTupRngElt) -> MonStgElt
+  { return "F:V" where F is list...}
+  F := BaseRing(v);
+  v := Eltseq(v);
+  if Type(F) eq FldRat then
+    return Sprint(v);
+  end if;
+  voverQQ := [Eltseq(elt) : elt in v];
+  f := DefiningPolynomial(F);
+  return Sprintf("%o:%o", Eltseq(f), voverQQ);
+end intrinsic;
+
+intrinsic MachinePrint(C::CrvHyp[FldRat]) -> MonStgElt
+  { .. }
+  // TODO: export C and the field of definition
+  F := BaseRing(C);
+  f := DefiningPolynomial(F);
+  voverQQ := [[Eltseq(elt) : elt in seqpol] : seqpol in Eltseq(f)];
+  return Sprintf("%o:%o", Eltseq(f), voverQQ);
 end intrinsic;
 
 /*
@@ -178,7 +206,7 @@ intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
 end intrinsic;
 
 
-function PretyCurve(Y)
+function PrettyCurve(Y)
   if Type(BaseRing(Y)) eq FldRat then
     Y := ReducedMinimalWeierstrassModel(Y);
     f, h := HyperellipticPolynomials(Y);
@@ -257,6 +285,7 @@ intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt) -> BoolElt, .
 
   try
     vprintf ModAbVarRec: "Reconstructing curve by recognizing igusa invariants...";
+    //FIXME check if J10 is 0
     vtime ModAbVarRec:
     igusa := AlgebraizedInvariantsG2(P, QQ : G2CC:=G2CC);
     vprintf ModAbVarRec: "Done\n igusa = %o\n" , igusa;
@@ -323,23 +352,24 @@ end intrinsic;
 
 
 
-intrinsic IsogenousGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, Rational:=true, D:=[-10..10]) -> BoolElt, Crv
+// FIXME, the output might not be a curve, but just igusa invariants over some numberfield
+intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Any
 {
 TODO: add documentation
 }
-  res := [* *];
-  b, C := ReconstructModularCurve(f: ncoeffs:=ncoeffs);
-  if b then
-    res := [* C *];
-  end if;
+
+
   function ReconstructIsogeneousPPs(P)
-    polarizations := SomeIsogenousPrincipallyPolarized(P);
+    //this returns a list of curves and vectors of igusa invariants
+    polarizations := SomeIsogenousPrincipallyPolarized(P : D:=D);
     res := [* *];
     for key in Sort(SetToSequence(Keys(polarizations))) do
       vprintf ModAbVarRec: "Trying polarization type = %o, %o of them.\n", key, #polarizations[key];
       for elt in polarizations[key] do
-        b, C := ReconstructIsomorphicGenus2Curve(elt : Rational:=Rational);
+        // C is either a curve, or a vector of Igusa invariants over a number field
+        b, C := ReconstructIsomorphicGenus2Curve(elt);
         if b then
+          // both Curves and Vectors have BaseRing
           if Type(BaseRing(C)) eq FldRat then
             return [* C *]; // found a rational curve nothing else to do
           else
@@ -360,39 +390,55 @@ TODO: add documentation
     ParallelSort(~lst, ~degdisc);
   end procedure;
 
-  function AreWeDone(lst)
+  function DoWeHaveARationalCurve(lst)
+    // returns a boolean
     return #lst ge 1 and Type(lst[1]) eq Crv and Type(BaseRing(lst[1])) eq FldRat;
-  return;
+  end function;
 
-  if AreWeDone(res) then
+
+  // The work starts here:
+  //
+  res := [* *];
+
+  // just use the modular forms as potential differential forms on the curve
+  b, C := ReconstructModularCurve(f: ncoeffs:=ncoeffs);
+  if b then
+    res := [* C *];
+  end if;
+
+  if not DoWeHaveARationalCurve(res) then
     P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
     vprint ModAbVarRec: "Trying SomeIsogenousPrincipallyPolarized with original period matrix";
     vtime ModAbVarRec:
     res cat:= ReconstructIsogeneousPPs(P);
     SortResults(res);
-    vprint ModAbVarRec: "^ loopign over SomeIsogenousPrincipallyPolarized with original period matrix";
+    vprint ModAbVarRec: "^ looping over SomeIsogenousPrincipallyPolarized with original period matrix";
   end if;
-  if AreWeDone(res)then
+  if not DoWeHaveARationalCurve(res) then
+    // FIXME?: this might not know what P is
     P2, G2 := PeriodMatrixWithMaximalOrder(P);
+    // if P == P2, then P was already maximal order
     if P ne P2 then
       vprint ModAbVarRec: "Trying SomeIsogenousPrincipallyPolarized with maximal order period matrix";
       vtime ModAbVarRec:
       res cat:= ReconstructIsogeneousPPs(P2);
       SortResults(res);
-      vprint ModAbVarRec: "^ loopign over SomeIsogenousPrincipallyPolarized with maximal order period matrix";
+      vprint ModAbVarRec: "^ looping over SomeIsogenousPrincipallyPolarized with maximal order period matrix";
     end if;
   end if;
 
-  if AreWeDone(res) then
+  if DoWeHaveARationalCurve(res) then
     C := res[1];
     vprintf ModAbVarRec: "Found curve %o\n", C;
     D := FindCorrectQuadraticTwist(C, f);
     vprintf ModAbVarRec: "Twisted by %o\n", D;
     vtime ModAbVarRec:
-    C := PretyCurve(QuadraticTwist(C, D));
-    return C;
+    C := PrettyCurve(QuadraticTwist(C, D));
+    return true, C;
+  elif #res gt 0 then
+    return true, res[1];
   end if;
-  return b, _;
+  return false, _;
 end intrinsic;
 
 intrinsic MakeNewformModSym(level::RngIntElt, hecke_cutters::SeqEnum[Tup]) -> ModSym
