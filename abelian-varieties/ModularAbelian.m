@@ -1,9 +1,6 @@
 declare verbose ModAbVarRec, 3;
 
-intrinsic GetDimension2Factors(N) -> SeqEnum
-{ FIXME }
-  return [A : A in Decomposition(JZero(N))];
-end intrinsic;
+import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, ReconstructCurveG2, ReconstructCurveG2CC;
 
 
 intrinsic WriteStderr(s::MonStgElt)
@@ -19,7 +16,13 @@ intrinsic WriteStderr(e::Err)
   WriteStderr(Sprint(e) cat "\n");
 end intrinsic;
 
-/* 
+
+intrinsic Eltseq(C::CrvHyp)
+  f, g := HyperellipticPolynomials(MinimalWeierstrassModel(C));
+  return [Eltseq(f), Eltseq(g)];
+end intrinsic;
+
+/*
  * No Longer need this
 intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
 { this normalizes  }
@@ -63,8 +66,6 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
   vprint ModAbVarRec: "Done";
   return PNew;
 end intrinsic;
-
-
 
 
 
@@ -129,8 +130,8 @@ end intrinsic;
 
 intrinsic SomeIsogenousPrincipallyPolarized(P::ModMatFldElt: D:= [-10..10]) -> Assoc
 {
-    Finds smallest (d,d) polarization (if there is one) of the modular abelian surface associated to P
     Returns period matrix for the d-isogenous abelian variety which is principally polarized
+    for several d by using SomePolarizations
 }
   polarizations := SomePolarizations(P : D := D);
   CC := BaseRing(P);
@@ -145,7 +146,7 @@ intrinsic SomeIsogenousPrincipallyPolarized(P::ModMatFldElt: D:= [-10..10]) -> A
                  [0, 1/d, 0, 0],
                  [0, 0, 1, 0],
                  [0, 0, 0, 1]]);
-    Pnew := P *Transpose(ChangeRing(Dscalar*F, CC) );
+    Pnew := P * Transpose(ChangeRing(Dscalar * F, CC) );
     b := IsDefined(res, key);
     if not b then
       res[key] := [];
@@ -176,46 +177,110 @@ intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
   return polarizations;
 end intrinsic;
 
-intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt, polarizations::SeqEnum : Rational:=true) -> BoolElt, Crv
+
+function PretyCurve(Y)
+  if Type(BaseRing(Y)) eq FldRat then
+    Y := ReducedMinimalWeierstrassModel(Y);
+    f, h := HyperellipticPolynomials(Y);
+    g := 4*f + h^2;
+    coeffs := Coefficients(g);
+    d := LCM([ Denominator(coeff) : coeff in coeffs ]);
+    coeffs := [ Integers() ! (d*coeff) : coeff in coeffs ];
+    e := GCD(coeffs);
+    coeffs := [ coeff div e : coeff in coeffs ];
+    Y := HyperellipticCurve(Polynomial(coeffs));
+    Y := ReducedMinimalWeierstrassModel(Y);
+  end if;
+  return Y;
+end function;
+
+intrinsic ReconstructModularCurve(f::ModSym : ncoeffs:=ncoeffs) -> BoolElt, Crv
 { TODO: fill in doc }
+    vprintf ModAbVarRec: "Trying to see if there is a modular curve...";
+    require Dimension(f) in [2, 4]: "Expected a galois orbit of dimension 2";
+    f1, f2 := Explode(qExpansionBasis(f, ncoeffs));
+    R<q> := Parent(f1);
+    xq := f2/f1;
+    yq := Derivative(xq)*q/f1;
+    function PaddedCoefficients(elt, start, e)
+        return [Coefficient(elt, i) : i in [start..e]];
+    end function;
+    R<q> := Parent(xq);
+    monomials := [<i,j> : i in [0..6], j in [0..2] | 3*j + i le 6];
+    M := Matrix(
+    [PaddedCoefficients(xq^i*yq^j, 0, 100) where i,j := Explode(elt) : elt in monomials]
+    );
+    B := Basis(Kernel(M));
+    if #B eq 0 then
+        return false, _;
+    end if;
+    b := B[1];
+    S1<x> := PolynomialRing(Rationals());
+    S2<y> := PolynomialRing(S1);
+    fxy := &+[c*x^i*y^j where i, j := Explode(monomials[k]) : k->c in Eltseq(b) ];
+    fxy /:= Coefficient(fxy, 2);
+    Cf := -Coefficient(fxy, 0);
+    Cg := Coefficient(fxy, 1);
+    assert y^2 + Cg*y - Cf eq fxy;
+    vprint ModAbVarRec: "Done!";
+    return true, HyperellipticCurve(Cf, Cg);
+end intrinsic;
+
+
+//TODO check isogenity?
+
+intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt) -> BoolElt, .
+{ TODO: fill in doc
+  return Curve or IgusaInvariants if not rational}
+  // assume that P is a big period matrix
+  require IsBigPeriodMatrix(P) : "Expects a big period matrix";
   CC := BaseRing(P);
   QQ := RationalsExtra(Precision(CC));
-  for pol in polarizations do
-    E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
-    newP := P*Transpose(ChangeRing(F, CC));
-    try
-      vprintf ModAbVarRec: "Reconstructing curve...";
-      vtime ModAbVarRec:
-      // ReconstructCurve tries to match tangent representation, we don't really care about
-      // and many times fails due to precision issues
-      // perhaps, because we have modified our period matrix in a nonstandard way
-      // C := ReconstructCurve(newP, QQ);
-      tau := SmallPeriodMatrix(newP);
-      igusa := AlgebraizedInvariants(tau, QQ);
-      vprint ModAbVarRec: "Done";
-      if Rational then
-        if Universe(igusa) cmpeq Rationals() then
-            C := HyperellipticCurveFromIgusaInvariants(igusa);
-            return true, C;
-        else
-            vprint ModAbVarRec: "Not over QQ";
-            vprint ModAbVarRec: IgusaInvariants(C);
-        end if;
-      else
-        return true, C;
-      end if;
-    catch e
-      WriteStderr(e);
-      vprint ModAbVarRec: "Failed :(";
-    end try;
-  end for;
+  G2CC := ReconstructCurveG2CC(P);
+  try
+    vprintf ModAbVarRec: "Reconstructing curve by matching tangent representation...";
+    // First tries ReconstructCurve as it tries to match tangent representation
+    vtime ModAbVarRec:
+    C, hL, b := ReconstructCurveG2(P, QQ : G2CC:=G2CC);
+    vprintf ModAbVarRec: "Done\n C = %o\n" , C;
+    igusa := IgusaInvariants(C);
+    ratIgusa := &and[elt in Rationals() : elt in igusa];
+    // try to descend C
+    if Type(BaseRing(C)) ne FldRat and ratIgusa then
+      C := HyperellipticCurveFromIgusaInvariants(igusa);
+    end if;
+    return true, C;
+  catch e
+    WriteStderr(e);
+    vprint ModAbVarRec: "Failed :(";
+  end try;
+
+  try
+    vprintf ModAbVarRec: "Reconstructing curve by recognizing igusa invariants...";
+    vtime ModAbVarRec:
+    igusa := AlgebraizedInvariantsG2(P, QQ : G2CC:=G2CC);
+    vprintf ModAbVarRec: "Done\n igusa = %o\n" , igusa;
+    if Universe(igusa) cmpeq Rationals() then
+      vprint ModAbVarRec: "Descending C";
+      C := HyperellipticCurveFromIgusaInvariants(igusa);
+      return true, C;
+    else
+      // if the igusa invariants are not rational, we don't try to reconstruct the curve
+      return true, Vector(igusa);
+    end if;
+  catch e
+    WriteStderr(e);
+    vprint ModAbVarRec: "Failed :(";
+  end try;
   return false, _;
 end intrinsic;
 
 
 
-intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=100) -> RngIntElt
+
+intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=200) -> RngIntElt
 { Find a quadratic twist such that C and f have the same L-function }
+    vprintf ModAbVarRec: "Find correct quadratic twist...";
     D := Integers()!Discriminant(C) * Level(f);
     N := Level(f);
     badprimes := IndexedSet(PrimeDivisors(D) cat [-1]);
@@ -239,7 +304,7 @@ intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=100) -> RngInt
       if efc eq eff then
         Append(~twistdata, 0);
       else
-        require Evaluate(efc, -Parent(efc).1) eq eff : Sprintf("is not a local quadratic twist at p=%o", p);
+        require Evaluate(efc, -Parent(efc).1) eq eff : Sprintf("is not a local quadratic twist at p=%o\nefc = %o != %o = eff\n C = %o", p, efc, eff, C);
         Append(~twistdata, 1);
       end if;
       Append(~splittingdata, [(KroneckerSymbol(q, p) eq -1) select 1 else 0 : q in badprimes]);
@@ -248,43 +313,86 @@ intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=100) -> RngInt
       end if;
     end for;
     sol := Solution(Transpose(Matrix(GF(2), splittingdata)), Vector(GF(2), twistdata));
-    return &*[badprimes[i]: i->e in Eltseq(sol) | not IsZero(e)];
+    vprint ModAbVarRec: "Done";
+    if IsZero(sol) then
+      return 1;
+    else
+      return &*[badprimes[i]: i->e in Eltseq(sol) | not IsZero(e)];
+    end if;
 end intrinsic;
 
 
 
-intrinsic ReconstructRationalGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Crv
+intrinsic IsogenousGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, Rational:=true, D:=[-10..10]) -> BoolElt, Crv
 {
-    FIXME
-    It fails if to find PP we throw a runtime error
+TODO: add documentation
 }
+  res := [* *];
+  b, C := ReconstructModularCurve(f: ncoeffs:=ncoeffs);
+  if b then
+    res := [* C *];
+  end if;
+  function ReconstructIsogeneousPPs(P)
+    polarizations := SomeIsogenousPrincipallyPolarized(P);
+    res := [* *];
+    for key in Sort(SetToSequence(Keys(polarizations))) do
+      vprintf ModAbVarRec: "Trying polarization type = %o, %o of them.\n", key, #polarizations[key];
+      for elt in polarizations[key] do
+        b, C := ReconstructIsomorphicGenus2Curve(elt : Rational:=Rational);
+        if b then
+          if Type(BaseRing(C)) eq FldRat then
+            return [* C *]; // found a rational curve nothing else to do
+          else
+            Append(~res, C);
+          end if;
+        end if;
+      end for;
+    end for;
+    return res;
+  end function;
+
+
+  procedure SortResults(~lst)
+    // sort on field
+    // then on curve, as false < true
+    // and then on size
+    degdisc := [<Degree(R), Discriminant(R), not Type(elt) eq Crv, #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
+    ParallelSort(~lst, ~degdisc);
+  end procedure;
+
+  function AreWeDone(lst)
+    return #lst ge 1 and Type(lst[1]) eq Crv and Type(BaseRing(lst[1])) eq FldRat;
+  return;
+
+  if AreWeDone(res) then
     P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+    vprint ModAbVarRec: "Trying SomeIsogenousPrincipallyPolarized with original period matrix";
+    vtime ModAbVarRec:
+    res cat:= ReconstructIsogeneousPPs(P);
+    SortResults(res);
+    vprint ModAbVarRec: "^ loopign over SomeIsogenousPrincipallyPolarized with original period matrix";
+  end if;
+  if AreWeDone(res)then
     P2, G2 := PeriodMatrixWithMaximalOrder(P);
-    polarizations := FindPrincipalPolarizations(P2 : D:=D);
-    require #polarizations gt 0 : "No principal polarizations were found, perhaps increasing the D list might help you or not...";
-    b, C := ReconstructIsomorphicGenus2Curve(P2, polarizations);
-    require b : "No curve over rationals was found";
-    return b, C;
-end intrinsic;
+    if P ne P2 then
+      vprint ModAbVarRec: "Trying SomeIsogenousPrincipallyPolarized with maximal order period matrix";
+      vtime ModAbVarRec:
+      res cat:= ReconstructIsogeneousPPs(P2);
+      SortResults(res);
+      vprint ModAbVarRec: "^ loopign over SomeIsogenousPrincipallyPolarized with maximal order period matrix";
+    end if;
+  end if;
 
-intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Crv
-{
-    FIXME
-}
-    P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
-    try
-        b, C:= ReconstructRationalGenus2Curve(f);
-    catch e
-        P2, G2 := PeriodMatrixWithMaximalOrder(P);
-        //FIXME!!!
-        assert false;
-        P3 := P2;
-        //P3 := FindddPolarizizedCurve(P2: D := D);
-        CC := BaseRing(P3);
-        QQ := RationalsExtra(Precision(CC));
-        C := ReconstructCurve(P3, QQ);
-    end try;
+  if AreWeDone(res) then
+    C := res[1];
+    vprintf ModAbVarRec: "Found curve %o\n", C;
+    D := FindCorrectQuadraticTwist(C, f);
+    vprintf ModAbVarRec: "Twisted by %o\n", D;
+    vtime ModAbVarRec:
+    C := PretyCurve(QuadraticTwist(C, D));
     return C;
+  end if;
+  return b, _;
 end intrinsic;
 
 intrinsic MakeNewformModSym(level::RngIntElt, hecke_cutters::SeqEnum[Tup]) -> ModSym
