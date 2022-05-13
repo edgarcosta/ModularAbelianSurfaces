@@ -16,17 +16,14 @@ intrinsic WriteStderr(e::Err)
   WriteStderr(Sprint(e) cat "\n");
 end intrinsic;
 
-
 intrinsic Eltseq(C::CrvHyp) -> SeqEnum
   {retunrns both hyperelliptic polynomials as SeqEnum}
-  f, g := HyperellipticPolynomials(MinimalWeierstrassModel(C));
+  if BaseRing(C) eq Rationals() then
+    f, g := HyperellipticPolynomials(MinimalWeierstrassModel(C));
+  else 
+    f, g := HyperellipticPolynomials(C);
+  end if;
   return [Eltseq(f), Eltseq(g)];
-end intrinsic;
-
-
-intrinsic MachinePrint(C::CrvHyp[FldRat]) -> MonStgElt
-  { return Sprintf("%o", [Eltseq(f), Eltseq(g)]) where f and g are the defining polynomials}
-  return Sprintf("%o", Eltseq(C));
 end intrinsic;
 
 intrinsic MachinePrint(v::ModTupRngElt) -> MonStgElt
@@ -41,14 +38,11 @@ intrinsic MachinePrint(v::ModTupRngElt) -> MonStgElt
   return Sprintf("%o:%o", Eltseq(f), voverQQ);
 end intrinsic;
 
-intrinsic MachinePrint(C::CrvHyp[FldRat]) -> MonStgElt
+intrinsic MachinePrint(C::CrvHyp) -> MonStgElt
   { .. }
-  // TODO: export C and the field of definition
   F := BaseRing(C);
   f := DefiningPolynomial(F);
-  //Sachi: I would probably just return seqpol, but this is the reverse order coefficients of the defining poly over QQ
-  voverQQ := [ coeff : coeff in Eltseq(f)]; 
-  return Sprintf("%o:%o", Eltseq(f), voverQQ);
+  return Sprintf("%o:%o", Eltseq(f), Eltseq(C));
 end intrinsic;
 
 /*
