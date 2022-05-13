@@ -46,7 +46,8 @@ intrinsic MachinePrint(C::CrvHyp[FldRat]) -> MonStgElt
   // TODO: export C and the field of definition
   F := BaseRing(C);
   f := DefiningPolynomial(F);
-  voverQQ := [[Eltseq(elt) : elt in seqpol] : seqpol in Eltseq(f)];
+  //Sachi: I would probably just return seqpol, but this is the reverse order coefficients of the defining poly over QQ
+  voverQQ := [ coeff : coeff in Eltseq(f)]; 
   return Sprintf("%o:%o", Eltseq(f), voverQQ);
 end intrinsic;
 
@@ -387,7 +388,9 @@ TODO: add documentation
     // then on curve, as false < true
     // and then on size
     degdisc := [<Degree(R), Discriminant(R), not Type(elt) eq Crv, #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
-    ParallelSort(~lst, ~degdisc);
+    positions := [1..#lst];
+    ParallelSort(~degdisc, ~positions);
+    lst := [* lst[j] : j in positions *];
   end procedure;
 
   function DoWeHaveARationalCurve(lst)
@@ -411,7 +414,7 @@ TODO: add documentation
     vprint ModAbVarRec: "Trying SomeIsogenousPrincipallyPolarized with original period matrix";
     vtime ModAbVarRec:
     res cat:= ReconstructIsogeneousPPs(P);
-    SortResults(res);
+    SortResults(~res);
     vprint ModAbVarRec: "^ looping over SomeIsogenousPrincipallyPolarized with original period matrix";
   end if;
   if not DoWeHaveARationalCurve(res) then
@@ -422,7 +425,7 @@ TODO: add documentation
       vprint ModAbVarRec: "Trying SomeIsogenousPrincipallyPolarized with maximal order period matrix";
       vtime ModAbVarRec:
       res cat:= ReconstructIsogeneousPPs(P2);
-      SortResults(res);
+      SortResults(~res);
       vprint ModAbVarRec: "^ looping over SomeIsogenousPrincipallyPolarized with maximal order period matrix";
     end if;
   end if;
