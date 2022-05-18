@@ -20,7 +20,7 @@ intrinsic Eltseq(C::CrvHyp) -> SeqEnum
   {retunrns both hyperelliptic polynomials as SeqEnum}
   if BaseRing(C) eq Rationals() then
     f, g := HyperellipticPolynomials(MinimalWeierstrassModel(C));
-  else 
+  else
     f, g := HyperellipticPolynomials(C);
   end if;
   return [Eltseq(f), Eltseq(g)];
@@ -41,8 +41,12 @@ end intrinsic;
 intrinsic MachinePrint(C::CrvHyp) -> MonStgElt
   { .. }
   F := BaseRing(C);
-  f := DefiningPolynomial(F);
-  return Sprintf("%o:%o", Eltseq(f), Eltseq(C));
+  if Type(F) ne FldRat then
+    f := DefiningPolynomial(F);
+    return Sprintf("%o:%o", Eltseq(f), Eltseq(C));
+  else
+    return Sprintf("%o", Eltseq(C));
+  end if;
 end intrinsic;
 
 /*
