@@ -41,12 +41,8 @@ end intrinsic;
 intrinsic MachinePrint(C::CrvHyp) -> MonStgElt
   { .. }
   F := BaseRing(C);
-  if Type(F) ne FldRat then
-    f := DefiningPolynomial(F);
-    return Sprintf("%o:%o", Eltseq(f), Eltseq(C));
-  else
-    return Sprintf("%o", Eltseq(C));
-  end if;
+  f := DefiningPolynomial(F);
+  return Sprintf("%o:%o", Eltseq(C), Eltseq(f));
 end intrinsic;
 
 /*
