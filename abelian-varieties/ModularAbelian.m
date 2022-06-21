@@ -20,10 +20,19 @@ intrinsic Eltseq(C::CrvHyp) -> SeqEnum
   {retunrns both hyperelliptic polynomials as SeqEnum}
   if BaseRing(C) eq Rationals() then
     f, g := HyperellipticPolynomials(MinimalWeierstrassModel(C));
+    return [Eltseq(f), Eltseq(g)];
   else
     f, g := HyperellipticPolynomials(C);
+    df := LCM([Denominator(elt) : elt in Eltseq(f)]);
+    f *:= df^2;
+    g *:= df;
+    if g ne 0 then // I don't think this ever runs
+      dg := LCM([Denominator(elt) : elt in Eltseq(g)]);
+      f *:= dg^2;
+      g *:= dg;
+    end if;
+    return [[Eltseq(elt) : elt in Eltseq(pol)] : pol in [f, g]];
   end if;
-  return [Eltseq(f), Eltseq(g)];
 end intrinsic;
 
 intrinsic MachinePrint(v::ModTupRngElt) -> MonStgElt
@@ -41,8 +50,12 @@ end intrinsic;
 intrinsic MachinePrint(C::CrvHyp) -> MonStgElt
   { .. }
   F := BaseRing(C);
-  f := DefiningPolynomial(F);
-  return Sprintf("%o:%o", Eltseq(C), Eltseq(f));
+  if BaseRing(C) eq Rationals() then
+    return Sprintf("%o", Eltseq(C));
+  else
+    f := DefiningPolynomial(F);
+    return Sprintf("%o:%o", Eltseq(C), Eltseq(f));
+  end if;
 end intrinsic;
 
 /*
@@ -217,8 +230,9 @@ function PrettyCurve(Y)
   return Y;
 end function;
 
-intrinsic ReconstructModularCurve(f::ModSym : ncoeffs:=ncoeffs) -> BoolElt, Crv
+intrinsic ReconstructModularCurve(f::ModSym : ncoeffs:=10000) -> BoolElt, Crv
 { TODO: fill in doc }
+    vprintf ModAbVarRec: "ReconstructModularCurve(%o, %o) ", Level(f), ncoeffs;
     vprintf ModAbVarRec: "Trying to see if there is a modular curve...";
     require Dimension(f) in [2, 4]: "Expected a galois orbit of dimension 2";
     f1, f2 := Explode(qExpansionBasis(f, ncoeffs));
@@ -252,9 +266,8 @@ end intrinsic;
 
 //TODO check isogenity?
 
-intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt) -> BoolElt, .
-{ TODO: fill in doc
-  return Curve or IgusaInvariants if not rational}
+intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt : UpperBound:=16) -> BoolElt, .
+{ return Curve or IgusaInvariants if not rational}
   // assume that P is a big period matrix
   require IsBigPeriodMatrix(P) : "Expects a big period matrix";
   CC := BaseRing(P);
@@ -264,7 +277,7 @@ intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt) -> BoolElt, .
     vprintf ModAbVarRec: "Reconstructing curve by matching tangent representation...";
     // First tries ReconstructCurve as it tries to match tangent representation
     vtime ModAbVarRec:
-    C, hL, b := ReconstructCurveG2(P, QQ : G2CC:=G2CC);
+    C, hL, b := ReconstructCurveG2(P, QQ : UpperBound:=UpperBound, G2CC:=G2CC);
     vprintf ModAbVarRec: "Done\n C = %o\n" , C;
     igusa := IgusaInvariants(C);
     ratIgusa := &and[elt in Rationals() : elt in igusa];
@@ -274,22 +287,22 @@ intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt) -> BoolElt, .
     end if;
     return true, C;
   catch e
+    vprint ModAbVarRec: "ReconstructIsomorphicGenus2Curve: Failed :(";
     WriteStderr(e);
-    vprint ModAbVarRec: "Failed :(";
   end try;
 
   try
     vprintf ModAbVarRec: "Reconstructing curve by recognizing igusa invariants...";
-    //FIXME check if J10 is 0
     vtime ModAbVarRec:
-    igusa := AlgebraizedInvariantsG2(P, QQ : G2CC:=G2CC);
+    igusa := AlgebraizedInvariantsG2(P, QQ : UpperBound:=UpperBound, G2CC:=G2CC);
+    _, _, _, _, J10 := Explode(igusa);
     vprintf ModAbVarRec: "Done\n igusa = %o\n" , igusa;
-    if Universe(igusa) cmpeq Rationals() then
+    if Universe(igusa) cmpeq Rationals() and J10 ne 0 then
       vprint ModAbVarRec: "Descending C";
       C := HyperellipticCurveFromIgusaInvariants(igusa);
       return true, C;
     else
-      // if the igusa invariants are not rational, we don't try to reconstruct the curve
+      // if the igusa invariants are not rational or J10 is 0, we don't try to reconstruct the curve
       return true, Vector(igusa);
     end if;
   catch e
@@ -348,13 +361,13 @@ end intrinsic;
 
 
 // FIXME, the output might not be a curve, but just igusa invariants over some numberfield
-intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10]) -> BoolElt, Any
+intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-10..10], UpperBound:=8) -> BoolElt, Any
 {
 TODO: add documentation
 }
 
 
-  function ReconstructIsogeneousPPs(P)
+function ReconstructIsogeneousPPs(P)
     //this returns a list of curves and vectors of igusa invariants
     polarizations := SomeIsogenousPrincipallyPolarized(P : D:=D);
     res := [* *];
@@ -362,14 +375,17 @@ TODO: add documentation
       vprintf ModAbVarRec: "Trying polarization type = %o, %o of them.\n", key, #polarizations[key];
       for elt in polarizations[key] do
         // C is either a curve, or a vector of Igusa invariants over a number field
-        b, C := ReconstructIsomorphicGenus2Curve(elt);
+        b, C := ReconstructIsomorphicGenus2Curve(elt : UpperBound:=UpperBound);
         if b then
+          vprintf ModAbVarRec: "Found a curve with polarization type = %o, %o of them.\n", key, #polarizations[key];
           // both Curves and Vectors have BaseRing
           if Type(BaseRing(C)) eq FldRat then
             return [* C *]; // found a rational curve nothing else to do
           else
             Append(~res, C);
           end if;
+        else
+        vprintf ModAbVarRec: "Did not found a curve with polarization type = %o, %o of them.\n", key, #polarizations[key];
         end if;
       end for;
     end for;
@@ -381,10 +397,12 @@ TODO: add documentation
     // sort on field
     // then on curve, as false < true
     // and then on size
-    degdisc := [<Degree(R), Discriminant(R), not Type(elt) eq Crv, #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
+    degdisc := [<Degree(R), Discriminant(R), not ISA(Type(elt), Crv), #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
     positions := [1..#lst];
+    vprintf ModAbVarRec: "UnSorted: %o\n%o\n", degdisc, lst;
     ParallelSort(~degdisc, ~positions);
     lst := [* lst[j] : j in positions *];
+    vprintf ModAbVarRec: "Sorted: %o\n%o\n", degdisc, lst;
   end procedure;
 
   function DoWeHaveARationalCurve(lst)
@@ -424,6 +442,7 @@ TODO: add documentation
     end if;
   end if;
 
+  vprintf ModAbVarRec: "all the curves %o\m", res;
   if DoWeHaveARationalCurve(res) then
     C := res[1];
     vprintf ModAbVarRec: "Found curve %o\n", C;
@@ -439,13 +458,15 @@ TODO: add documentation
 end intrinsic;
 
 intrinsic MakeNewformModSym(level::RngIntElt, hecke_cutters::SeqEnum[Tup]) -> ModSym
-{ FIXME }
+{ "TODO: add documentation" }
+    vprintf ModAbVarRec: "MakeNewformModSym(%o, %o)\n", level, &cat Split(Sprint(hecke_cutters), "\n");
     R<x> := PolynomialRing(Rationals());
     // SetVerbose("ModularSymbols", true);
     chi := DirichletGroup(level)!1;
-    hecke_cutters := [<elt[1], R!elt[2]> : elt in hecke_cutters];
+    Rhecke_cutters := [<elt[1], R!elt[2]> : elt in hecke_cutters];
     Snew := NewSubspace(CuspidalSubspace(ModularSymbols(chi,2)));
-    f := Kernel(hecke_cutters ,Snew);
+    f := Kernel(Rhecke_cutters ,Snew);
+    vprintf ModAbVarRec: "Done MakeNewformModSym(%o, %o)\n", level, &cat Split(Sprint(hecke_cutters), "\n");
     return f;
 end intrinsic;
 
