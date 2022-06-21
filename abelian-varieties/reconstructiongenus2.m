@@ -66,6 +66,7 @@ Hs := [ Matrix(CC, [ theta_ders ]) * P2inew : theta_ders in theta_derss ];
 rats := [ ];
 for H in Hs do
     seq := Eltseq(H);
+    vprint CurveRec: "H:", H;
     add := true;
     if Abs(seq[2]) lt Abs(seq[1]) then
         if Abs(seq[2]/seq[1])^2 lt CC`epscomp then
@@ -86,7 +87,7 @@ end function;
 
 
 
-function AlgebraizedInvariantsG2(inp, K : Base:=false, G2CC:=false)
+function AlgebraizedInvariantsG2(inp, K : Base:=false, UpperBound:=16, G2CC:=false)
 
 CC := BaseRing(Parent(inp));
 g := Nrows(inp);
@@ -112,7 +113,7 @@ end if;
 ICC := IgusaInvariants(fCC); W := [ 2, 4, 6, 8, 10 ];
 ICC := WPSNormalizeCC(W, ICC);
 if Base then
-    test, I := AlgebraizeElementsExtra(ICC, K);
+    test, I := AlgebraizeElementsExtra(ICC, K : UpperBound:=UpperBound);
     if not test then
         vprint CurveRec : "";
         vprint CurveRec : "Failed to algebraize Igusa invariants.";
@@ -120,21 +121,20 @@ if Base then
     end if;
     L := K; hKL := CanonicalInclusionMap(K, L);
 else
-    L, I, hKL := NumberFieldExtra(ICC, K);
+    L, I, hKL := NumberFieldExtra(ICC, K : UpperBound:=UpperBound);
 end if;
 return I, hKL, true;
 
 end function;
 
-function ReconstructCurveGeometricG2(inp, K : Base:=false, G2CC:=false)
+function ReconstructCurveGeometricG2(inp, K : Base:=false, UpperBound:=16, G2CC:=false)
 /* Alternative: implement variant of BILV */
 /* TODO: Add check of not being product of elliptic curves */
 
-I, hKL, b := AlgebraizedInvariantsG2(inp, K : Base:=Base, G2CC:=G2CC);
+    I, hKL, b := AlgebraizedInvariantsG2(inp, K : Base:=Base, UpperBound:=UpperBound, G2CC:=G2CC);
 if not b then
     return 0, 0, false;
 end if;
-
 
 g2 := IgusaToG2Invariants(I);
 Y := HyperellipticCurveFromG2Invariants(g2);
@@ -157,7 +157,7 @@ return Y, hKL, true;
 end function;
 
 
-function ReconstructCurveG2(P, K : Base:=false, Dom:= [-5..5], G2CC:=false)
+function ReconstructCurveG2(P, K : Base:=false, Dom:= [-5..5], UpperBound:=16, G2CC:=false)
 // Reconstruct curve from period matrix P, returned over an extension of the
 // base field K.
 /* TODO: Add check of not being product of elliptic curves */
@@ -168,6 +168,10 @@ if G2CC cmpeq false then
     fCC, tau, P := ReconstructCurveG2CC(P);
 else
     fCC, tau, P := Explode(G2CC);
+end if;
+
+if Abs(Discriminant(fCC)) lt CC`epscomp then
+    error "Cannot reconstruct curve, it is a product of elliptic curves.";
 end if;
 
 /* Finding homomorphisms to original matrix */
@@ -218,19 +222,19 @@ coeffsCC := ChangeUniverse(coeffsCC, K`CC);
 vprint CurveRec : "";
 vprint CurveRec : "Algebraizing...";
 if Base then
-    test, coeffs := AlgebraizeElementsExtra(coeffsCC, K);
+    test, coeffs := AlgebraizeElementsExtra(coeffsCC, K : UpperBound:=UpperBound);
     if not test then
         vprint CurveRec : "Failed to algebraize coefficients.";
         return 0, 0, false;
     end if;
     L := K; hKL := CanonicalInclusionMap(K, L);
 else
-    L, coeffs, hKL := NumberFieldExtra(coeffsCC, K);
+    L, coeffs, hKL := NumberFieldExtra(coeffsCC, K : UpperBound:=UpperBound);
 end if;
 vprint CurveRec : "done.";
 
 R := PolynomialRing(L);
-f := &+[ coeffs[i]*R.1^(i - 1) : i in [1..#coeffs] ];
+f := R!coeffs;
 Y := HyperellipticCurve(f);
 YCC := RiemannSurface(fCC, 2 : Precision := Precision(CC) + 10);
 Q := ChangeRing(YCC`BigPeriodMatrix, CC) / 2;
