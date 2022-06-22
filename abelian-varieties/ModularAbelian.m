@@ -1,6 +1,6 @@
 declare verbose ModAbVarRec, 3;
 
-import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, ReconstructCurveG2, ReconstructCurveG2CC;
+import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, ReconstructCurveG2;
 
 
 intrinsic WriteStderr(s::MonStgElt)
@@ -8,6 +8,11 @@ intrinsic WriteStderr(s::MonStgElt)
   E := Open("/dev/stderr", "w");
   Write(E, s);
   Flush(E);
+end intrinsic;
+
+intrinsic Strip(s::MonStgElt) -> MonStgElt
+{ Removes all white space, including newlines, from the string }
+ return Join(Split(Join(Split(s," "),""),"\n"),"");
 end intrinsic;
 
 
@@ -266,18 +271,59 @@ end intrinsic;
 
 //TODO check isogenity?
 
-intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt : UpperBound:=16) -> BoolElt, .
+intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt : UpperBound:=16, AbortEarly:=true) -> BoolElt, .
 { return Curve or IgusaInvariants if not rational}
   // assume that P is a big period matrix
   require IsBigPeriodMatrix(P) : "Expects a big period matrix";
   CC := BaseRing(P);
   QQ := RationalsExtra(Precision(CC));
-  G2CC := ReconstructCurveG2CC(P);
+  J := false;
+  // we first try to compute the Modular invariants
+  // these are easy to compute and if we cannot algebraize them we are out of luck
   try
+    vprintf ModAbVarRec: "Recognizing igusa invariants...";
+    // one would like to go for Modular invariants directly
+    // but it hard to normalize them, one should instead use rational functions
+    // e.g. recognize h4*h6/h10, h6^2/h12, etc
+    J, _, b := AlgebraizedInvariantsG2(P, QQ : UpperBound:=UpperBound, type:="Igusa");
+    assert b; // is caught by the try block
+    vprintf ModAbVarRec: "Done\n J = %o over %o\n" , J, Universe(J);
+    _, _, _, _, J10 := Explode(J);
+    if J10 eq 0 then
+      vprint ModAbVarRec: "We got a product of elliptic curves";
+      vprintf ModAbVarRec: "Recognizing modular invariants...";
+      // let's try to compute I_12
+      H, _, b := AlgebraizedInvariantsG2(P, QQ : UpperBound:=UpperBound, type:="Modular");
+      assert b;
+      // we could get j1 and j2 from
+      // page 181 of Igusa, "Siegel modular forms of genus 2":
+      // y_1 = j_1 j_2 and  y_2 = (j_1 - 1728)(j_2-1728)
+      // where if I'm not making mistakes:
+      // y_1 = 2^{11} \cdot 3\cdot I_4^3/I_{12}
+      // and
+      // y_2 = 2^{13}\cdot 3\cdot I_6'^2/I_{12}
+      vprintf ModAbVarRec: "Done\n H = %o over %o\n" , H, Universe(H);
+      return true, Vector(H);
+    end if;
+    if Universe(J) cmpeq Rationals() then
+      vprint ModAbVarRec: "Descending C";
+      C := HyperellipticCurveFromIgusaInvariants(J);
+      return true, C;
+    end if;
+  catch e
+    vprint ModAbVarRec: "Failed recognizing invariants";
+    WriteStderr(e);
+    // in interest of time we give up
+    if AbortEarly then
+      return false, _;
+    end if;
+  end try;
+
+  try
+    // over a number field this is sometimes suprisingly successful
     vprintf ModAbVarRec: "Reconstructing curve by matching tangent representation...";
-    // First tries ReconstructCurve as it tries to match tangent representation
     vtime ModAbVarRec:
-    C, hL, b := ReconstructCurveG2(P, QQ : UpperBound:=UpperBound, G2CC:=G2CC);
+    C, hL, b := ReconstructCurveG2(P, QQ : UpperBound:=UpperBound);
     vprintf ModAbVarRec: "Done\n C = %o\n" , C;
     igusa := IgusaInvariants(C);
     ratIgusa := &and[elt in Rationals() : elt in igusa];
@@ -291,25 +337,12 @@ intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt : UpperBound:=16) -> 
     WriteStderr(e);
   end try;
 
-  try
-    vprintf ModAbVarRec: "Reconstructing curve by recognizing igusa invariants...";
-    vtime ModAbVarRec:
-    igusa := AlgebraizedInvariantsG2(P, QQ : UpperBound:=UpperBound, G2CC:=G2CC);
-    _, _, _, _, J10 := Explode(igusa);
-    vprintf ModAbVarRec: "Done\n igusa = %o\n" , igusa;
-    if Universe(igusa) cmpeq Rationals() and J10 ne 0 then
-      vprint ModAbVarRec: "Descending C";
-      C := HyperellipticCurveFromIgusaInvariants(igusa);
-      return true, C;
-    else
-      // if the igusa invariants are not rational or J10 is 0, we don't try to reconstruct the curve
-      return true, Vector(igusa);
-    end if;
-  catch e
-    WriteStderr(e);
-    vprint ModAbVarRec: "Failed :(";
-  end try;
-  return false, _;
+  if J cmpeq false then // we failed to recognize the igusa invariants
+    return false, _;
+  else
+    return true, Vector(J);
+  end if;
+
 end intrinsic;
 
 
@@ -367,7 +400,7 @@ TODO: add documentation
 }
 
 
-function ReconstructIsogeneousPPs(P)
+  function ReconstructIsogeneousPPs(P)
     //this returns a list of curves and vectors of igusa invariants
     polarizations := SomeIsogenousPrincipallyPolarized(P : D:=D);
     res := [* *];
@@ -397,7 +430,7 @@ function ReconstructIsogeneousPPs(P)
     // sort on field
     // then on curve, as false < true
     // and then on size
-    degdisc := [<Degree(R), Discriminant(R), not ISA(Type(elt), Crv), #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
+    degdisc := [<Degree(R), Discriminant(R), not ISA(Type(elt), Crv), #Strip(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
     positions := [1..#lst];
     vprintf ModAbVarRec: "UnSorted: %o\n%o\n", degdisc, lst;
     ParallelSort(~degdisc, ~positions);
@@ -407,7 +440,7 @@ function ReconstructIsogeneousPPs(P)
 
   function DoWeHaveARationalCurve(lst)
     // returns a boolean
-    return #lst ge 1 and Type(lst[1]) eq Crv and Type(BaseRing(lst[1])) eq FldRat;
+    return #lst ge 1 and ISA(Type(lst[1]), Crv) and Type(BaseRing(lst[1])) eq FldRat;
   end function;
 
 
