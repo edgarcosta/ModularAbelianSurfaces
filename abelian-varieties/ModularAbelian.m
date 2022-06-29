@@ -349,7 +349,8 @@ intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=200) -> RngInt
 { Find a quadratic twist such that C and f have the same L-function if C only has quadratic twists}
     vprintf ModAbVarRec: "Find correct quadratic twist...";
     require #GeometricAutomorphismGroup(C) eq 2 : "Automorphism group  of curve too large";
-    D := Integers()!Discriminant(C) * Level(f);
+    disc := Discriminant(C);
+    D := Integers()! (Numerator(disc) * Denominator(disc) * Level(f));
     N := Level(f);
     badprimes := IndexedSet(PrimeDivisors(D) cat [-1]);
     primes := IndexedSet(PrimesUpTo(Bound)) diff badprimes;
@@ -669,7 +670,6 @@ TODO: add documentation
     vprint ModAbVarRec: "Done looping over SomeIsogenousPrincipallyPolarized with original period matrix";
   end if;
   if not DoWeHaveARationalCurve(res) then
-    // FIXME?: this might not know what P is
     P2, G2 := PeriodMatrixWithMaximalOrder(P);
     // if P == P2, then P was already maximal order
     if P ne P2 then
