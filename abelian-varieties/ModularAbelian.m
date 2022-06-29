@@ -49,7 +49,7 @@ intrinsic Eltseq(C::CrvHyp) -> SeqEnum
 end intrinsic;
 
 intrinsic MachinePrint(v::ModTupRngElt) -> MonStgElt
-  { return "F:V" where F is list...}
+{ return "V:F" where F is list of the coefficients of the defining polynomial}
   F := BaseRing(v);
   v := Eltseq(v);
   if Type(F) eq FldRat then
@@ -57,7 +57,7 @@ intrinsic MachinePrint(v::ModTupRngElt) -> MonStgElt
   end if;
   voverQQ := [Eltseq(elt) : elt in v];
   f := DefiningPolynomial(F);
-  return Sprintf("%o:%o", Eltseq(f), voverQQ);
+  return Sprintf("%o:%o", voverQQ,  Eltseq(f));
 end intrinsic;
 
 intrinsic MachinePrint(C::CrvHyp) -> MonStgElt
