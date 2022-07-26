@@ -393,7 +393,7 @@ end intrinsic;
 
 
 // FIXME, the output might not be a curve, but just igusa invariants over some numberfield
-intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-3..3], UpperBound:=14) -> BoolElt, Any
+intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, ncoeffs:=10000, D:=[-4..4], UpperBound:=12) -> BoolElt, Any
 {
 TODO: add documentation
 }
