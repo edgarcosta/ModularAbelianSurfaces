@@ -1,7 +1,7 @@
 //Initialising...
 
 AttachSpec("~/CHIMP/CHIMP.spec");
-AttachSpec("~/ModularCurves/abelian-varieties/spec");
+AttachSpec("ModularCurves/abelian-varieties/spec");
 input := "456.2.a.e:456:[<5,[-10,1,1]>]";
 
 // Finding Period Matrix
@@ -21,8 +21,7 @@ time f := MakeNewformModSym(level, hc);
 
 time P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
 
-time Pmax, G2 := PeriodMatrixWithMaximalOrder(P);
-//G2[2][2];
+time Pmax, G := PeriodMatrixWithMaximalOrder(P);
 
 // Finding generators of endomorphism ring and relations to find structure of lattice as an OK module 
 
@@ -33,6 +32,7 @@ alpha := G[2][2];
 alphaCC := ChangeRing(alpha, BaseRing(P));
 // columns of new period matrix
 e1, e2, e3, e4 := Explode(Columns(Pmax));
+e1alpha,e2alpha:=Explode(Columns(Pmax*alphaCC));
 
 //The above is just expressing the columns e3,e4 in temrs of e1,e2,alpha*e1,alpha*e2 where alpha is the generator of the Endomorphism ring.
 
@@ -65,14 +65,19 @@ d := LCM([Denominator(elt) : elt in [a1, a2, b1, b2]]);
 _, gen := IsPrincipal(Different(OK));
 different := gen*OK;
 
-
+A:=RModule(OK,2);
 Id := (1/d)*OK;
 M := Module(
 [<Id,A![d*a1,d*b1]> ,<Id,A![d*a2,d*b2]> ,<Id,A![d,0]> ,<Id,A![0,d]>]
 );
 B := PseudoBasis(M);
 
+//What is this module???
+
+
 prod := B[1][1]*B[2][1]*different;
+
+Inverse:=(OK*1)/prod;
 
 // there is some overlap with below
 
@@ -85,11 +90,14 @@ B := PseudoBasis(M);
 
 OK:=MaximalOrder(K);
 I1:=1/d*OK;
-A:=RModule(OK,2);
+
 //M:=Module([<I1,A![d*a1,20*a3] ,<I1,A![20*a2,20*a4]>]);
 //PseudoGenerators(M);
 M1:=Module([<I1,A![d*a1,d*a3]> ,<I1,A![d*a2,d*a4]> ,<I1,A![d,0]> ,<I1,A![0,d]> ]);
 Basis:=PseudoBasis(M1);
+
+
+
 aa:=2*a+1;
 Different:=aa*OK;
 //Better way of doing this? Somehwo in conjungtion with the code I have written Different does not quite work.
