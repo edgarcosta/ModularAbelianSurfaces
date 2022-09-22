@@ -344,50 +344,65 @@ end intrinsic;
 */
 
 
+intrinsic FindCorrectQuadraticTwist(C::CrvHyp, euler_factors::UserProgram, BadPrimes: Bound:=200) -> RngIntElt
+{ Find a quadratic twist such that C and it matches the given Euler factors, returns 0 if no quadratic twist is found}
+  vprintf ModAbVarRec: "Find correct quadratic twist...";
+  orderG := #GeometricAutomorphismGroup(C);
+  vprintf ModAbVarRec: "The geometric automorphism group is of size %o.\n", orderG;
+  oktofail := orderG ne 2;
+  disc := Discriminant(C);
+  D := Integers()! (Numerator(disc) * Denominator(disc));
+  badprimes := IndexedSet(PrimeDivisors(D) cat BadPrimes cat [-1]);
+  primes := Sort(SetToSequence(IndexedSet(PrimesUpTo(Bound)) diff badprimes));
+  twistdata := [];
+  splittingdata := [];
+  // this could be written without Bound and with a while loop
+  for p in primes do
+    vprintf ModAbVarRec: "p = %o\nEuler factor C ", p;
+    vtime ModAbVarRec:
+    efc := EulerFactor(C, p);
+    if IsZero(Coefficient(efc, 1)) then
+      // useless prime, as efc(x) = efc(-x)
+      continue;
+    end if;
+    vprintf ModAbVarRec: "Euler factor f ", p;
+    vtime ModAbVarRec:
+    eff := euler_factors(p);
+    if efc eq eff then
+      Append(~twistdata, 0);
+    else
+      if Evaluate(efc, -Parent(efc).1) ne eff then
+        require oktofail : Sprintf("is not a local quadratic twist at p=%o\nefc = %o != %o = eff\n C = %o, and #G = %o", p, Eltseq(efc), Eltseq(eff), C, orderG);
+        return 0;
+      end if;
+      Append(~twistdata, 1);
+    end if;
+    Append(~splittingdata, [(KroneckerSymbol(q, p) eq -1) select 1 else 0 : q in badprimes]);
+    if Rank(Matrix(GF(2), splittingdata)) eq #badprimes then
+      break p;
+    end if;
+  end for;
+  try
+    sol := Solution(Transpose(Matrix(GF(2), splittingdata)), Vector(GF(2), twistdata));
+  catch e
+    require oktofail: Sprintf("There is no quadratic twist");
+    return 0;
+  end try;
+  vprint ModAbVarRec: "Done";
+  if IsZero(sol) then
+    return 1;
+  else
+    return &*[badprimes[i]: i->e in Eltseq(sol) | not IsZero(e)];
+  end if;
+end intrinsic;
+
 
 intrinsic FindCorrectQuadraticTwist(C::CrvHyp, f::ModSym : Bound:=200) -> RngIntElt
-{ Find a quadratic twist such that C and f have the same L-function if C only has quadratic twists}
-    vprintf ModAbVarRec: "Find correct quadratic twist...";
-    require #GeometricAutomorphismGroup(C) eq 2 : "Automorphism group  of curve too large";
-    disc := Discriminant(C);
-    D := Integers()! (Numerator(disc) * Denominator(disc) * Level(f));
-    N := Level(f);
-    badprimes := IndexedSet(PrimeDivisors(D) cat [-1]);
-    primes := IndexedSet(PrimesUpTo(Bound)) diff badprimes;
-    skipp := [];
-    twistdata := [];
-    splittingdata := [];
-    // this could be written without Bound and with a while loop
-    for p in primes do
-      vprintf ModAbVarRec: "p = %o\nEuler factor C ", p;
-      vtime ModAbVarRec:
-      efc := EulerFactor(C, p);
-      if IsZero(Coefficient(efc, 1)) then
-        // useless prime, as efc(x) = efc(-x)
-        Append(~skipp, p);
-        continue;
-      end if;
-      vprintf ModAbVarRec: "Euler factor f ", p;
-      vtime ModAbVarRec:
-      eff := Reverse(CharpolyOfFrobenius(f, p));
-      if efc eq eff then
-        Append(~twistdata, 0);
-      else
-        require Evaluate(efc, -Parent(efc).1) eq eff : Sprintf("is not a local quadratic twist at p=%o\nefc = %o != %o = eff\n C = %o", p, Eltseq(efc), Eltseq(eff), C);
-        Append(~twistdata, 1);
-      end if;
-      Append(~splittingdata, [(KroneckerSymbol(q, p) eq -1) select 1 else 0 : q in badprimes]);
-      if Rank(Matrix(GF(2), splittingdata)) eq #badprimes then
-        break p;
-      end if;
-    end for;
-    sol := Solution(Transpose(Matrix(GF(2), splittingdata)), Vector(GF(2), twistdata));
-    vprint ModAbVarRec: "Done";
-    if IsZero(sol) then
-      return 1;
-    else
-      return &*[badprimes[i]: i->e in Eltseq(sol) | not IsZero(e)];
-    end if;
+{ Find a quadratic twist such that C and f have the same L-function, returns 0 if no quadratic twist is found}
+  euler_factors := function(p)
+    return Reverse(CharpolyOfFrobenius(f, p));
+  end function;
+  return FindCorrectQuadraticTwist(C, euler_factors, PrimeDivisors(Level(f)) : Bound:=Bound);
 end intrinsic;
 
 
