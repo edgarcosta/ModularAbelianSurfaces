@@ -23,7 +23,7 @@ procedure CheckLine(line)
     t := TraceHash(TracesOfFrobenius(C, 2^12, 2^13));
     expected_t := hash_database[input[1]];
     if t ne expected_t  then
-        printf "%o: %o != %o", input[1], expected_t, t;
+        printf "%o: %o != %o\n", input[1], expected_t, t;
     end if;
 end procedure;
 
