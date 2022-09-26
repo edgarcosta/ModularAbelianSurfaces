@@ -28,3 +28,4 @@ procedure CheckLine(line)
 end procedure;
 
 CheckLine(input);
+exit;
