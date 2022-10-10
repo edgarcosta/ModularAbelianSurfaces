@@ -1,6 +1,10 @@
+AttachSpec("~/projects/CHIMP/CHIMP.spec");
 AttachSpec("spec");
 
-function doline(label, curve, nf)
+function doline(line)
+    label, curve, nf:= Explode(Split(line, ":"));
+    nf := eval nf;
+    curve := eval curve;
     prec := 100;
     R<x>:= PolynomialRing(Rationals());
     K<a> := NumberField(R!nf);
@@ -19,13 +23,20 @@ function doline(label, curve, nf)
         end if;
     end for;
     ncoeffs := Ceiling(20*Sqrt(level)*Log(10)*prec/(2*Pi(ComplexField())));
-    time f := MakeNewformModSym(level, hc);
+    f := MakeNewformModSym(level, hc);
 
     Periodf := PeriodMatrix(f : prec := prec, ncoeffs:= ncoeffs);
 
     G, iota:= GeometricHomomorphismRepresentation(PeriodCurve, Periodf, RationalsExtra(prec));
 
-    return G; //if G is empty then our data is bad
+    if #G eq 0 then
+        return line cat ":false";
+    end if;
+    K := Codomain(iota);
+    f := DefiningPolynomial(K);
+    degrees := [Determinant(elt[2]) : elt in G];
+
+    return StripWhiteSpace(Sprintf("%o:true:%o:%o", line, degrees, Coefficients(f)));
 
 end function;
 
@@ -36,8 +47,5 @@ if assigned seq then
     SetAutoColumns(false);
     data := Split(Read("label_to_curve_notQQ.txt"), "\n");
     line := data[seq];
-    label, curve, nf:= Explode(Split(line, ":"));
-    nf := eval nf;
-    curve := eval curve;
-    print(doline(label, curve, nf)); // What do we actually want to print here?
+    print(doline(line)); // What do we actually want to print here?
 end if;
