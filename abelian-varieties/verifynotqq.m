@@ -1,5 +1,7 @@
 AttachSpec("~/projects/CHIMP/CHIMP.spec");
 AttachSpec("spec");
+//SetVerbose("ModAbVarRec", 2);
+//SetVerbose("EndoFind", 1);
 
 function doline(line)
     label, curve, nf:= Explode(Split(line, ":"));
