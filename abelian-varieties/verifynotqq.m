@@ -7,7 +7,7 @@ function doline(line)
     label, curve, nf:= Explode(Split(line, ":"));
     nf := eval nf;
     curve := eval curve;
-    prec := 100;
+    prec := 300;
     R<x>:= PolynomialRing(Rationals());
     K<a> := NumberField(R!nf);
     S<t>:= PolynomialRing(K);
