@@ -22,10 +22,9 @@ function doline(line)
             break;
         end if;
     end for;
-    ncoeffs := Ceiling(20*Sqrt(level)*Log(10)*prec/(2*Pi(ComplexField())));
     f := MakeNewformModSym(level, hc);
 
-    Periodf := PeriodMatrix(f : prec := prec, ncoeffs:= ncoeffs);
+    Periodf := PeriodMatrix(f : prec := prec);
 
     G, iota:= GeometricHomomorphismRepresentation(PeriodCurve, Periodf, RationalsExtra(prec));
 
