@@ -1,11 +1,13 @@
 AttachSpec("~/projects/CHIMP/CHIMP.spec");
 AttachSpec("spec");
+//SetVerbose("ModAbVarRec", 2);
+//SetVerbose("EndoFind", 1);
 
 function doline(line)
     label, curve, nf:= Explode(Split(line, ":"));
     nf := eval nf;
     curve := eval curve;
-    prec := 100;
+    prec := 300;
     R<x>:= PolynomialRing(Rationals());
     K<a> := NumberField(R!nf);
     S<t>:= PolynomialRing(K);
@@ -22,10 +24,9 @@ function doline(line)
             break;
         end if;
     end for;
-    ncoeffs := Ceiling(20*Sqrt(level)*Log(10)*prec/(2*Pi(ComplexField())));
     f := MakeNewformModSym(level, hc);
 
-    Periodf := PeriodMatrix(f : prec := prec, ncoeffs:= ncoeffs);
+    Periodf := PeriodMatrix(f : prec := prec);
 
     G, iota:= GeometricHomomorphismRepresentation(PeriodCurve, Periodf, RationalsExtra(prec));
 

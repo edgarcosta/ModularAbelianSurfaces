@@ -87,13 +87,14 @@ end intrinsic;
 */
 
 // use hecke to get the number of correct digits
-intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
+intrinsic PeriodMatrix(f::ModSym, ncoeffs::RngIntElt : prec:=80) -> ModMatFldElt
 { Compute the normalized period matrix associated to f}
   vprint ModAbVarRec: Sprintf("Computing periods, prec:=%o, ncoeffs:=%o", prec, ncoeffs);
   vprint ModAbVarRec: Sprintf("%o...", f);
   default_prec := Precision(GetDefaultRealField());
   // this is how we control the precision of the output of Periods
   SetDefaultRealFieldPrecision(prec + 10);
+  vprintf ModAbVarRec: "Computing PeriodMapping(f, %o)\n", ncoeffs;
   vtime ModAbVarRec:
   // PeriodMapping gives the periods up to isogeny
   pi_f := PeriodMapping(f, ncoeffs);
@@ -114,6 +115,33 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, ncoeffs:=10000) -> ModMatFldElt
   SetDefaultRealFieldPrecision(default_prec);
   vprint ModAbVarRec: "Done";
   return PNew;
+end intrinsic;
+
+intrinsic PeriodMatrix(f::ModSym : prec:=80) -> ModMatFldElt
+  { Compute the normalized period matrix associated to f }
+  // before we defaulted to this guess with the first 2 replaced by 20
+  ncoeffs := 0;
+  ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
+  ncoeffs +:= 4*ncoeffs_inc;
+  vtime ModAbVarRec:
+  P0 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
+  ncoeffs +:= ncoeffs_inc;
+  vtime ModAbVarRec:
+  P1 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
+  // P0 and P1 live in rings with prec + 20
+  // this checks if they agree up to prec + 10
+  t, e := AlmostEqualMatrix(P0, P1);
+  while not t do
+    vprint ModAbVarRec: Sprintf("Current error: %o", ComplexField(8)!e);
+    P0 := P1;
+    ncoeffs +:= ncoeffs_inc;
+    vtime ModAbVarRec:
+    P1 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
+    t, e := AlmostEqualMatrix(P0, P1);
+    assert ncoeffs lt 20*ncoeffs_inc; // sanity
+  end while;
+  CC := ComplexFieldExtra(prec + 10);
+  return ChangeRing(P1, CC), e;
 end intrinsic;
 
 
