@@ -53,7 +53,7 @@ if Degree(KL) ne 1 then
         end if;
     end for;
     if not found then
-    	WriteStderr(Sprintf("no twist found for %o over %o\n", label, DefiningPolynomial(K)));
+    	WriteStderr(Sprintf("no twist found for %o over %o\n", label, DefiningPolynomial(KL)));
     end if;
 else
     WriteStderr(Sprintf("skipping %o\n", label));
