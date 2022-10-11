@@ -42,8 +42,7 @@ KL := Polredabs(Compositum(L, K));
 
 if Degree(KL) ne 1 then
     expected_t := ReadHashDatabase()[label];
-    time twists := AllTwists(C, KL : AutGrp:=<aut,phi>);
-    print twists;
+    twists := AllTwists(C, KL : AutGrp:=<aut,phi>);
     found := false;
     for Cprime in twists do
         if expected_t eq TraceHash(TracesOfFrobenius(Cprime, 2^12, 2^13)) then
