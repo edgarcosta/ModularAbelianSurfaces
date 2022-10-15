@@ -130,7 +130,7 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   end if;
   ncoeffs := 0;
   ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
-  ncoeffs +:= 4*ncoeffs_inc;
+  ncoeffs +:= 3*ncoeffs_inc;
   vtime ModAbVarRec:
   P0 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
   ncoeffs +:= ncoeffs_inc;
