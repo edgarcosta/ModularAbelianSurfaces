@@ -35,3 +35,43 @@ these are labels for which we don't have a curve/Q with matching L-function
 5808.2.a.bx - quad twist of 363.2.a.g (in this list)
 *5808.2.a.cg - quad twist of 726.2.a.j
 5887.2.a.e - 2 inner twists, coeff ring has index 2
+
+forms in missing Hecke file with N >= 6000 
+
+6360.2.a.m
+6426.2.a.bi
+6426.2.a.br
+6678.2.a.bj
+6678.2.a.y
+6744.2.a.e - is minimal
+6810.2.a.o
+6890.2.a.q
+6975.2.a.w
+7140.2.a.s
+7141.2.a.a
+7210.2.a.p
+7266.2.a.m
+7330.2.a.i
+7540.2.a.i
+7746.2.a.b
+7990.2.a.j
+8114.2.a.b
+8265.2.a.f
+8306.2.a.a
+8354.2.a.d
+8466.2.a.o
+8491.2.a.g
+8493.2.a.k
+8565.2.a.k
+8610.2.a.bc
+8785.2.a.d
+9078.2.a.l
+9237.2.a.a
+9438.2.a.bn
+9438.2.a.ce
+9486.2.a.e
+9486.2.a.i
+9672.2.a.m
+9690.2.a.be
+9750.2.a.c
+9750.2.a.h
