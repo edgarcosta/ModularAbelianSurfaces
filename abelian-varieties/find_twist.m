@@ -93,11 +93,11 @@ if Degree(KL) ne 1 then
     end for;
     if not found then
     	WriteStderr(Sprintf("no twist found for %o over %o\n", label, DefiningPolynomial(KL)));
-      print StripWhiteSpace(Join([label, "false", Sprint(Coefficients(DefiningPolynomial(KL)))]],":"));
+      print StripWhiteSpace(Join([label, "false", Sprint(Coefficients(DefiningPolynomial(KL)))],":"));
     end if;
 else
     WriteStderr(Sprintf("skipping %o\n", label));
-    print StripWhiteSpace(Join([label, "false", Sprint(Coefficients(DefiningPolynomial(KL)))]],":"));
+    print StripWhiteSpace(Join([label, "false", Sprint(Coefficients(DefiningPolynomial(KL)))],":"));
 end if;
 //exit;
 //catch e
