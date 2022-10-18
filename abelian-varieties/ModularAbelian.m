@@ -723,7 +723,7 @@ TODO: add documentation
   end if;
 
   if not DoWeHaveARationalCurve(res) then
-    P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+    P := PeriodMatrix(f : prec:=prec);
     vprint ModAbVarRec: "Looping over isogenous PP lattices with original period matrix";
     vtime ModAbVarRec:
     newres, bins, Js := ReconstructIsogeneousPPs(P, bins, Js);
