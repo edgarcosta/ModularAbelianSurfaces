@@ -1,5 +1,6 @@
 AttachSpec("~/projects/CHIMP/CHIMP.spec");
 AttachSpec("~/projects/ModularCurves/abelian-varieties/spec");
+SetNthreads(1);
 
 if assigned verbose then
     verbose := eval verbose;
@@ -82,7 +83,7 @@ C, KL, aut, phi := ComputeKL(f, eqns, prec);
 
 if Degree(KL) ne 1 then
     expected_t := ReadHashDatabase()[label];
-    twists := AllTwists(C, KL : AutGrp:=<aut,phi>);
+    twists := AllTwists(C, KL : AutGrp:=<aut,phi>, minimal:=false);
     found := false;
     for Cprime in twists do
         if expected_t eq TraceHash(TracesOfFrobenius(Cprime, 2^12, 2^13)) then
