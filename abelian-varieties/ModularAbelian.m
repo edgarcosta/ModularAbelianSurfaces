@@ -249,7 +249,7 @@ end intrinsic;
 
 intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
 { TODO: fill in doc }
-  vprint ModAbVarRec: "Finding a polarizations %o...", D;
+  vprintf ModAbVarRec: "Finding a polarizations %o...", D;
   vtime ModAbVarRec:
   polarizations := SomePrincipalPolarizations(P : D:=D);
   vprint ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
