@@ -81,7 +81,7 @@ end if;
 input := Split(input, ":");
 
 label, eqns := Explode(input);
-if #input eq 4 then
+if #input eq 4 or assigned forceKL then
     level, hc := GetLevelHeckeCutters(label);
 
     f := MakeNewformModSym(level, hc);
