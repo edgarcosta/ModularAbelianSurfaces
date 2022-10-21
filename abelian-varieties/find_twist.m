@@ -1,6 +1,9 @@
 AttachSpec("~/projects/CHIMP/CHIMP.spec");
 AttachSpec("~/projects/ModularCurves/abelian-varieties/spec");
 SetNthreads(1);
+SetColumns(0);
+SetAutoColumns(false);
+SetIgnorePrompt(true);
 
 if assigned verbose then
     verbose := eval verbose;
