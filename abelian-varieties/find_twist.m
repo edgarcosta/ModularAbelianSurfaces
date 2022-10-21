@@ -35,6 +35,37 @@ function GetLevelHeckeCutters(label)
     return false, false;
 end function;
 
+
+function ComputeKL(f, eqns, prec : AutGrp:=false, KL:=false)
+    C := Genus2Curve(eqns: prec:=prec);
+    PeriodC := PeriodMatrix(C);
+    if AutGrp cmpeq false then
+        try
+            aut, phi, hToL := GeometricAutomorphismGroupViaPeriods(C);
+        catch e
+            WriteStderr(e);
+            WriteStderr(Sprintf("Increasing prec to %o", prec + 100));
+            return ComputeKL(f, eqns, prec + 100: KL:=KL);
+        end try;
+    else
+        aut, phi, hToL := Explode(AutGrp);
+    end if;
+    if KL cmpeq false then
+        Periodf := PeriodMatrix(f : prec := prec);
+        try
+            G, hToK := GeometricHomomorphismRepresentation(PeriodC, Periodf, RationalsExtra(prec));
+        catch e
+            WriteStderr(e);
+            WriteStderr(Sprintf("Increasing prec to %o", prec + 100));
+            return ComputeKL(f, eqns, prec + 100 : AutGrp:=<aut, phi, hToL>);
+        end try;
+        L := Codomain(hToL);
+        K := Codomain(hToK);
+        KL := Polredabs(Compositum(L, K));
+    end if;
+    return C, KL, aut, phi;
+end function;
+
 if assigned prec then
   if Type(prec) eq MonStgElt then
       prec := StringToInteger(prec);
@@ -44,42 +75,23 @@ else
 end if;
 
 
+input := Split(input, ":");
 
-label, eqns := Explode(Split(input, ":"));
-level, hc := GetLevelHeckeCutters(label);
+label, eqns := Explode(input);
+if #input eq 4 then
+    level, hc := GetLevelHeckeCutters(label);
 
-QQ := RationalsExtra(prec);
-f := MakeNewformModSym(level, hc);
+    f := MakeNewformModSym(level, hc);
+    KL := false;
+else
+    f := false;
+    hc := false;
+    KL_poly := eval input[5];
+    KL := NumberField(Polynomial(KL_poly));
+end if;
 
-function ComputeKL(f, eqns, prec : AutGrp:=false)
-    C := Genus2Curve(eqns: prec:=prec);
-    PeriodC := PeriodMatrix(C);
-    if AutGrp cmpeq false then
-        try
-            aut, phi, hToL := GeometricAutomorphismGroupViaPeriods(C);
-        catch e
-            WriteStderr(e);
-            WriteStderr(Sprintf("Increasing prec to %o", prec + 100));
-            return ComputeKL(f, eqns, prec + 100);
-        end try;
-    else
-        aut, phi, hToL := Explode(AutGrp);
-    end if;
-    Periodf := PeriodMatrix(f : prec := prec);
-    try
-        G, hToK := GeometricHomomorphismRepresentation(PeriodC, Periodf, QQ);
-    catch e
-        WriteStderr(e);
-        WriteStderr(Sprintf("Increasing prec to %o", prec + 100));
-        return ComputeKL(f, eqns, prec + 100 : AutGrp:=<aut, phi, hToL>);
-    end try;
-    L := Codomain(hToL);
-    K := Codomain(hToK);
-    KL := Polredabs(Compositum(L, K));
-    return C, KL, aut, phi;
-end function;
 
-C, KL, aut, phi := ComputeKL(f, eqns, prec);
+C, KL, aut, phi := ComputeKL(f, eqns, prec: KL:=KL);
 
 if Degree(KL) ne 1 then
     expected_t := ReadHashDatabase()[label];
