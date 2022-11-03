@@ -1,0 +1,140 @@
+AttachSpec("~/projects/CHIMP/CHIMP.spec");
+AttachSpec("~/projects/ModularCurves/abelian-varieties/spec");
+input := "456.2.a.e:456:[<5,[-10,1,1]>]";
+
+// Finding Period Matrix
+
+//The relevant material is in Goren pg 53-55 for the trace pairing implemented here. Code is just for one example and very non-modular. Will try it for other examples soon.
+
+s := Split(input, ":");
+label := s[1];
+level := StringToInteger(s[2]);
+hc := eval s[3];
+prec := 200;
+ncoeffs := Ceiling(20*Sqrt(level)*Log(10)*prec/(2*Pi(ComplexField())));
+
+
+time f := MakeNewformModSym(level, hc);
+time P := PeriodMatrix(f : prec:=prec);
+time P2, G2 := PeriodMatrixWithMaximalOrder(P);
+
+alpha:=ChangeRing(G2[2][2],BaseRing(P));  
+P2columns:= Rows(Transpose(P2));
+e1,e2, e3,e4:=Explode(P2columns);
+e1alpha,e2alpha:=Explode(Rows(Transpose(P2*alpha)));
+
+Me3:=Matrix([e1,e1alpha,e2,e2alpha,e3]);
+Me4:=Matrix([e1,e1alpha,e2,e2alpha,e4]);
+kere4:=IntegralLeftKernel(Me4);
+kere3:=IntegralLeftKernel(Me3);
+
+e3_coeff_for_e1:=-kere3[1,1]/kere3[1,5];
+e3_coeff_for_e1alpha:=-kere3[1,2]/kere3[1,5];
+e3_coeff_for_e2:=-kere3[1,3]/kere3[1,5];
+e3_coeff_for_e2alpha:=-kere3[1,4]/kere3[1,5];
+e4_coeff_for_e1:=-kere4[1,1]/kere4[1,5];
+e4_coeff_for_e1alpha:=-kere4[1,2]/kere4[1,5];
+e4_coeff_for_e2:=-kere4[1,3]/kere4[1,5];
+e4_coeff_for_e2alpha:=-kere4[1,4]/kere4[1,5];
+
+g:=MinimalPolynomial(G2[2][2]);
+K<a> :=NumberField(g);
+b, L := IsQuadratic(K);
+b, m := IsIsomorphic(L, K);
+u := m(FundamentalUnit(L));
+OK:=MaximalOrder(K);
+assert a eq OK.2;
+
+a1 := K!e3_coeff_for_e1+a*K!e3_coeff_for_e1alpha;
+a2 := K!e3_coeff_for_e2+a*K!e3_coeff_for_e2alpha;
+a3 := K!e4_coeff_for_e1+a*K!e4_coeff_for_e1alpha;
+a4 := K!e4_coeff_for_e2+a*K!e4_coeff_for_e2alpha;
+d1:=Denominator(a1);
+d2:=Denominator(a2);
+d3:=Denominator(a3);
+d4:=Denominator(a4);
+d:=LCM(LCM(LCM(d1,d2),d3),d4);
+I1:=1/d*OK;
+A:=RModule(OK,2);
+//PseudoGenerators(M);
+M1,map:=Module([<I1,A![d*a1,d*a3]> ,<I1,A![d*a2,d*a4]> ,<I1,A![d,0]> ,<I1,A![0,d]> ]);
+//map(A.1),map(A.2),M1;
+//d,a1,a2,a3,a4;
+Basis:=PseudoBasis(M1);
+//Basis;
+different:=Different(OK);
+
+J1:=Basis[1][1];
+J2:=Basis[2][1];
+
+ProductOfIdeals:=J1*J2*different;
+//ProductOfIdeals;
+One:=1*OK;
+_,gen1:=IsPrincipal(J1);
+_,gen2:=IsPrincipal(J2);
+Inverse:=One/ProductOfIdeals;
+s1:=ElementToSequence(map(A.1))[1];
+s2:=ElementToSequence(map(A.1))[2];
+s3:=ElementToSequence(map(A.2))[1];
+s4:=ElementToSequence(map(A.2))[2];
+s1:=s1/gen1;
+s2:=s2/gen2;
+s3:=s3/gen1;
+s4:=s4/gen2;
+S:=Matrix(2,2,[s1,s2,s3,s4]);
+Sinv:=S^(-1);
+Sinv;
+
+id2x2 := ChangeRing(G2[1][1], BaseRing(P2));
+amatrix := ChangeRing(G2[2][1], BaseRing(P2));
+K;
+foo := hom<K->Parent(id2x2) | [ amatrix]>;
+Sinv;
+s11:=foo(Sinv[1,1]);
+s12:=foo(Sinv[1,2]);
+s21:=foo(Sinv[2,1]);
+s22:=foo(Sinv[2,2]);
+
+vectore1:=ChangeRing(Matrix(2,1,[e1[1],e1[2]]),BaseRing(P2));
+vectore2:=ChangeRing(Matrix(2,1,[e2[1],e2[2]]),BaseRing(P2));
+f1 eq vectore1;
+f1:=s11*vectore1+s12*vectore2;
+f2:=s21*vectore1+s22*vectore2;
+f1alpha:=amatrix*f1; 
+f2alpha:=amatrix*f2;
+
+_,r:=IsPrincipal(Inverse);
+assert r*OK eq Inverse;
+assert IsTotallyPositive(r);
+
+b1:=gen1;
+b2:=OK.2*gen1;
+b3:=gen2;
+b4:=OK.2*gen2;
+
+a11:=0;
+a12:=0;
+a13:=Trace(r*b1*b3);
+a14:=Trace(r*b1*b4);
+a21:=-a12;
+a22:=0;
+a23:=Trace(r*b2*b3);
+a24:=Trace(r*b2*b4);
+a31:=-a13;
+a32:=-a23;
+a33:=0;
+a34:=0;
+a41:=-a14;
+a42:=-a24;
+a43:=-a34;
+a44:=0;
+E:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
+assert(Determinant(E)) eq 1;
+E;
+
+Piprime:=HorizontalJoin(HorizontalJoin(HorizontalJoin(f1,f1alpha),f2),f2alpha);
+#Rows(Piprime),#Rows(Transpose(Piprime));
+//GeometricEndomorphismRepresentation(Piprime,RationalsExtra(100));
+
+IsBigPeriodMatrix(Piprime * Transpose(ChangeRing(cb, BaseRing(Piprime)))
+where _, cb := FrobeniusFormAlternating(Matrix(Integers(), Transpose(E))));
