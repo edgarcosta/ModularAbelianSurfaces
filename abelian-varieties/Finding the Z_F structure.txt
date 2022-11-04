@@ -1,0 +1,167 @@
+//Initialising...
+
+AttachSpec("~/CHIMP/CHIMP.spec");
+AttachSpec("~/ModularCurves/abelian-varieties/spec");
+input := "456.2.a.e:456:[<5,[-10,1,1]>]";
+
+// Finding Period Matrix
+
+//The relevant material is in Goren pg 53-55 for the trace pairing implemented here. Code is just for one example and very non-modular. Will try it for other examples soon.
+
+s := Split(input, ":");
+label := s[1];
+level := StringToInteger(s[2]);
+hc := eval s[3];
+prec := 100;
+
+// figure out the right number of qexp coeffs
+ncoeffs := Ceiling(20*Sqrt(level)*Log(10)*prec/(2*Pi(ComplexField())));
+
+time f := MakeNewformModSym(level, hc);
+
+time P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+
+time P2, G2 := PeriodMatrixWithMaximalOrder(P);
+//G2[2][2];
+
+// Finding generators of endomorphism ring and relations to find structure of lattice as an OK module 
+
+alpha:=ChangeRing(G2[2][2],BaseRing(P));  
+P2columns:= Rows(Transpose(P2));
+e1,e2, e3,e4:=Explode(P2columns);
+e1alpha,e2alpha:=Explode(Rows(Transpose(P2*alpha)));
+//M:=Matrix([e1,e1alpha,e2,e2alpha]);
+Me3:=Matrix([e1,e1alpha,e2,e2alpha,e3]);
+Me4:=Matrix([e1,e1alpha,e2,e2alpha,e4]);
+kere4:=IntegralLeftKernel(Me4);
+kere3:=IntegralLeftKernel(Me3);
+e3_coeff_for_e1:=-kere3[1,1]/kere3[1,5];
+e3_coeff_for_e1alpha:=-kere3[1,2]/kere3[1,5];
+e3_coeff_for_e2:=-kere3[1,3]/kere3[1,5];
+e3_coeff_for_e2alpha:=-kere3[1,4]/kere3[1,5];
+e4_coeff_for_e1:=-kere4[1,1]/kere4[1,5];
+e4_coeff_for_e1alpha:=-kere4[1,2]/kere4[1,5];
+e4_coeff_for_e2:=-kere4[1,3]/kere4[1,5];
+e4_coeff_for_e2alpha:=-kere4[1,4]/kere4[1,5];
+
+//The above is just expressing the columns e3,e4 in temrs of e1,e2,alpha*e1,alpha*e2 where alpha is the generator of the Endomorphism ring.
+ 
+f:=MinimalPolynomial(G2[2][2]);
+K<a> :=NumberField(f);
+a1 := K!e3_coeff_for_e1+a*K!e3_coeff_for_e1alpha;
+a2 := K!e4_coeff_for_e1+a*K!e4_coeff_for_e1alpha;
+a3 := K!e3_coeff_for_e2+a*K!e3_coeff_for_e2alpha;
+a4 := K!e4_coeff_for_e2+a*K!e4_coeff_for_e2alpha;
+
+d1:=Denominator(a1);
+d2:=Denominator(a2);
+d3:=Denominator(a3);
+d4:=Denominator(a4);
+d:=LCM(LCM(LCM(d1,d2),d3),d4);
+d;
+
+OK:=MaximalOrder(K);
+I1:=1/d*OK;
+A:=RModule(OK,2);
+//M:=Module([<I1,A![d*a1,20*a3] ,<I1,A![20*a2,20*a4]>]);
+//PseudoGenerators(M);
+M1:=Module([<I1,A![d*a1,d*a3]> ,<I1,A![d*a2,d*a4]> ,<I1,A![d,0]> ,<I1,A![0,d]> ]);
+Basis:=PseudoBasis(M1);
+aa:=2*a+1;
+Different:=aa*OK;
+//Better way of doing this? Somehwo in conjungtion with the code I have written Different does not quite work.
+J1:=Basis[1][1];
+J2:=Basis[2][1];
+ProductOfIdeals:=J1*J2*Different;
+ProductOfIdeals;
+
+OK:=1*OK;
+Inverse:=OK/ProductOfIdeals;
+OK:=MaximalOrder(K);
+NormOfInverse:=Norm(Inverse);
+DOfInverse:=Denominator(NormOfInverse);
+s:=DOfInverse^2*NormOfInverse;
+s:=Integers()!s;   //It was illegal to do s!IntegerRing()
+_,x:=NormEquation(OK,s);
+
+for i in [1..8] do;
+if x[i] in Inverse then
+r:=x[i];
+break;
+end if;
+end for;
+r;
+
+r:=r/DOfInverse;
+
+assert r*OK eq Inverse;
+
+//aa:=2*a+1;
+//Different:=aa*OK;
+//J1:=(1/2*OK.1+1/2*OK.2)*OK;
+//J2:=(-17/2*OK.1-6/5*OK.2)*OK;
+//J1*J2*Different;
+//r:=-395/4*OK.1-519/20*OK.2;
+//r:=1/r;
+
+gen1:=Generators(J1)[2];
+gen2:=Generators(J2)[2];
+b1:=gen1;
+b2:=OK.2*gen1;
+b3:=gen2;
+b4:=OK.2*gen2;
+
+
+a11:=0;
+a12:=0;
+a13:=Trace(r*b1*b3);
+a14:=Trace(r*b1*b4);
+a21:=-a12;
+a22:=0;
+a23:=Trace(r*b2*b3);
+a24:=Trace(r*b2*b4);
+a31:=-a13;
+a32:=-a23;
+a33:=0;
+a34:=0;
+a41:=-a14;
+a42:=-a24;
+a43:=-a34;
+a44:=0;
+E:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
+
+/* This was to check the behaviour as we change the generator of the ideal r*OK
+Noticed the determinant is actually invariant.
+
+K:=QuadraticField(Discriminant(OK)); \\Redefine K to find fundamental unit
+OK:=MaximalOrder(K);
+
+u:=FundamentalUnit(OK);
+
+for i in [-10..10] do
+a11:=0;
+a12:=0;
+a13:=Trace(u^i*r*b1*b3);
+a14:=Trace(u^i*r*b1*b4);
+a21:=0;
+a22:=0;
+a23:=Trace(u^i*r*b2*b3);
+a24:=Trace(u^i*r*b2*b4);
+a31:=-a13;
+a32:=-a23;
+a33:=0;
+a34:=0;
+a41:=-a14;
+a42:=-a24;
+a44:=-a34;
+a34:=-a34;
+a44:=0;
+E:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
+//if Determinant(E) eq 1 then
+Determinant(E);
+//end if;
+end for;
+
+*/
+
+
