@@ -1,0 +1,51 @@
+RM 12 - missing curves 
+
+these are labels in hecke_missing file N < 5000
+
+1014.2.a.h - quad twist of 1014.2.a.j
+1701.2.a.l - is minimal, 2 inner twists
+2310.2.a.w - is minimal, coeff ring index 4
+2660.2.a.i - is minimal
+2738.2.a.e - quad twist of 2738.2.a.i
+2816.2.a.h - quad twist of 2816.2.a.a
+3025.2.a.l - quad twist of 605.2.a.e
+3042.2.a.v - quad twist of 1014.2.a.j
+3276.2.a.p - is minimal, 2 inner twists
+3630.2.a.bg - quad twist of 3630.2.a.bo
+3636.2.a.e - quad twist of 1212.2.a.b
+3870.2.a.be - quad twist of 3870.2.a.bj
+3924.2.a.j - is minimal, 2 inner twists
+4356.2.a.p - is minimal, 4 inner twists, CM -3
+4458.2.a.h - is minimal
+4578.2.a.i - is minimal
+4598.2.a.bf - quad twist of 4598.2.a.w
+4725.2.a.ba - quad twist of 189.2.a.e
+4794.2.a.j - is minimal
+4848.2.a.bc - quad twist of 2424.2.a.i
+4902.2.a.s - is minimal
+
+
+labels in hecke_missing file N >= 5000
+
+5655.2.a.l
+5859.2.a.h
+5859.2.a.i
+6489.2.a.i
+6669.2.a.c
+7267.2.a.d
+7533.2.a.a
+7791.2.a.o
+8107.2.a.e
+8281.2.a.w
+8349.2.a.g
+8379.2.a.bb
+8379.2.a.be
+8379.2.a.x
+8379.2.a.y
+8715.2.a.m
+8775.2.a.x
+8775.2.a.y
+8775.2.a.z
+8957.2.a.g
+9075.2.a.bg
+9675.2.a.bg

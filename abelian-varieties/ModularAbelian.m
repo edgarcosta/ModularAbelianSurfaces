@@ -96,6 +96,10 @@ intrinsic PeriodMatrix(f::ModSym, ncoeffs::RngIntElt : prec:=80) -> ModMatFldElt
   SetDefaultRealFieldPrecision(prec + 10);
   vprintf ModAbVarRec: "Computing PeriodMapping(f, %o)\n", ncoeffs;
   vtime ModAbVarRec:
+  // clear cache if necessary
+  if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt prec + 10 then
+    delete f`PeriodMap;
+  end if;
   // PeriodMapping gives the periods up to isogeny
   pi_f := PeriodMapping(f, ncoeffs);
   // Apply it to the whole space
@@ -120,9 +124,13 @@ end intrinsic;
 intrinsic PeriodMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   { Compute the normalized period matrix associated to f }
   // before we defaulted to this guess with the first 2 replaced by 20
+  // clear cache
+  if assigned f`PeriodMap then
+    delete f`PeriodMap;
+  end if;
   ncoeffs := 0;
   ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
-  ncoeffs +:= 4*ncoeffs_inc;
+  ncoeffs +:= 3*ncoeffs_inc;
   vtime ModAbVarRec:
   P0 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
   ncoeffs +:= ncoeffs_inc;
@@ -241,7 +249,7 @@ end intrinsic;
 
 intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
 { TODO: fill in doc }
-  vprint ModAbVarRec: "Finding a polarizations %o...", D;
+  vprintf ModAbVarRec: "Finding a polarizations %o...", D;
   vtime ModAbVarRec:
   polarizations := SomePrincipalPolarizations(P : D:=D);
   vprint ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
@@ -715,7 +723,7 @@ TODO: add documentation
   end if;
 
   if not DoWeHaveARationalCurve(res) then
-    P := PeriodMatrix(f : prec:=prec, ncoeffs:=ncoeffs);
+    P := PeriodMatrix(f : prec:=prec);
     vprint ModAbVarRec: "Looping over isogenous PP lattices with original period matrix";
     vtime ModAbVarRec:
     newres, bins, Js := ReconstructIsogeneousPPs(P, bins, Js);
