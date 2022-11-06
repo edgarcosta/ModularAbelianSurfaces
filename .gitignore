@@ -6,3 +6,4 @@
 equations/ModSym/input_data/*
 equations/ModSym/tmp.m
 equations/ModSym/output_data/*
+*.swp
