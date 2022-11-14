@@ -63,9 +63,12 @@ s4:=s4/gen2;
 
 S:=Matrix(2,2,[s1,s2,s3,s4]);
 Sinv:=S^(-1);
-
-id2x2 := ChangeRing(G2[1][1], BaseRing(Pmax));
-amatrix := ChangeRing(G2[2][1], BaseRing(Pmax));
+if alpha[1][1] eq 1 then
+    id2x2 := ChangeRing(alpha[1][1], BaseRing(Pmax));
+elif alpha[1][1] eq -1 then
+    id2x2 := ChangeRing(-alpha[1][1], BaseRing(Pmax));
+end if;
+amatrix := ChangeRing(alpha[2][1], BaseRing(Pmax));
 
 //printf "This was amarix %o", amatrix;
 
@@ -164,14 +167,14 @@ a41:=-a14;
 a42:=-a24;
 a43:=-a34;
 a44:=0;
-E:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
+pol:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
 
-assert(Determinant(E)) eq 1;
+assert(Determinant(pol)) eq 1;
 
-F, cb := FrobeniusFormAlternating(Matrix(Integers(), Transpose(E)));
+E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
 
-assert IsBigPeriodMatrix(Piprime * Transpose(ChangeRing(cb, BaseRing(Piprime))));
-return Piprime*Transpose(ChangeRing(cb,BaseRing(Piprime))),F,E;
+assert IsBigPeriodMatrix(Piprime * Transpose(ChangeRing(F, BaseRing(Piprime))));
+return Piprime*Transpose(ChangeRing(F,BaseRing(Piprime))),E,pol;
 
 end function;
 
