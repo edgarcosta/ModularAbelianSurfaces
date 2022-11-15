@@ -107,6 +107,9 @@ TracePrincipalPolarization:=function(Piprime,M)
 //When the order considered has narrow class number 1, we can construct a principal polarization via the trace pairing
 
 K:=FieldOfFractions(BaseRing(M));
+K1<a>:=NumberField(g);
+b,m1:=IsIsomorphic(K1,K);
+a:=m1(a);
 
 OK:=Integers(K);
 b, L := IsQuadratic(K);
@@ -120,9 +123,9 @@ _,gen1:=IsPrincipal(J1);
 _,gen2:=IsPrincipal(J2);
 
 b1:=gen1;
-b2:=OK.2*gen1;
+b2:=a*gen1;
 b3:=gen2;
-b4:=OK.2*gen2;
+b4:=a*gen2;
 
 ProductOfIdeals:=J1*J2*Different(OK);
 One:=1*OK;
