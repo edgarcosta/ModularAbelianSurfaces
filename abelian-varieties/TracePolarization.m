@@ -103,8 +103,11 @@ return Piprime,M,map;
 end function;
 
 
-TracePrincipalPolarization:=function(Piprime,M)
-//When the order considered has narrow class number 1, we can construct a principal polarization via the trace pairing
+TracePrincipalPolarization:=function(Piprime,M,g)
+
+/*When the order considered has narrow class number 1, we can construct a principal polarization via the trace pairing.
+The input is a period matrix with maximal order Piprime, the OK module structure on Pirprime, M (where OK is the ring of integers of a 
+real quadratic field) and the defining polynomial of a generator of OK which was used to calculate the OK structure on Piprime*/
 
 K:=FieldOfFractions(BaseRing(M));
 K1<a>:=NumberField(g);
