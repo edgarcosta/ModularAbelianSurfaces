@@ -63,9 +63,12 @@ s4:=s4/gen2;
 
 S:=Matrix(2,2,[s1,s2,s3,s4]);
 Sinv:=S^(-1);
-
-id2x2 := ChangeRing(G2[1][1], BaseRing(Pmax));
-amatrix := ChangeRing(G2[2][1], BaseRing(Pmax));
+if alpha[1][1] eq 1 then
+    id2x2 := ChangeRing(alpha[1][1], BaseRing(Pmax));
+elif alpha[1][1] eq -1 then
+    id2x2 := ChangeRing(-alpha[1][1], BaseRing(Pmax));
+end if;
+amatrix := ChangeRing(alpha[2][1], BaseRing(Pmax));
 
 //printf "This was amarix %o", amatrix;
 
@@ -100,10 +103,16 @@ return Piprime,M,map;
 end function;
 
 
-TracePrincipalPolarization:=function(Piprime,M)
-//When the order considered has narrow class number 1, we can construct a principal polarization via the trace pairing
+TracePrincipalPolarization:=function(Piprime,M,g)
+
+/*When the order considered has narrow class number 1, we can construct a principal polarization via the trace pairing.
+The input is a period matrix with maximal order Piprime, the OK module structure on Pirprime, M (where OK is the ring of integers of a 
+real quadratic field) and the defining polynomial of a generator of OK which was used to calculate the OK structure on Piprime*/
 
 K:=FieldOfFractions(BaseRing(M));
+K1<a>:=NumberField(g);
+b,m1:=IsIsomorphic(K1,K);
+a:=m1(a);
 
 OK:=Integers(K);
 b, L := IsQuadratic(K);
@@ -117,9 +126,9 @@ _,gen1:=IsPrincipal(J1);
 _,gen2:=IsPrincipal(J2);
 
 b1:=gen1;
-b2:=OK.2*gen1;
+b2:=a*gen1;
 b3:=gen2;
-b4:=OK.2*gen2;
+b4:=a*gen2;
 
 ProductOfIdeals:=J1*J2*Different(OK);
 One:=1*OK;
@@ -164,14 +173,14 @@ a41:=-a14;
 a42:=-a24;
 a43:=-a34;
 a44:=0;
-E:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
+pol:=Matrix(IntegerRing(),4,4,[a11,a12,a13,a14,a21,a22,a23,a24,a31,a32,a33,a34,a41,a42,a43,a44]);
 
-assert(Determinant(E)) eq 1;
+assert(Determinant(pol)) eq 1;
 
-F, cb := FrobeniusFormAlternating(Matrix(Integers(), Transpose(E)));
+E, F := FrobeniusFormAlternating(Matrix(Integers(), pol));
 
-assert IsBigPeriodMatrix(Piprime * Transpose(ChangeRing(cb, BaseRing(Piprime))));
-return Piprime*Transpose(ChangeRing(cb,BaseRing(Piprime))),F,E;
+assert IsBigPeriodMatrix(Piprime * Transpose(ChangeRing(F, BaseRing(Piprime))));
+return Piprime*Transpose(ChangeRing(F,BaseRing(Piprime))),E,pol;
 
 end function;
 

@@ -174,7 +174,7 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   require #GeoEndoRepBase eq 2: Sprintf("This does not seem to be GL2-type, dim End A = %o", #GeoEndoRepBase);
   one := GeoEndoRepBase[1][2];
   gen := GeoEndoRepBase[2][2];
-  assert one eq 1;
+  assert one eq 1 or one eq -1;
   minpoly := MinimalPolynomial(gen); //need to make (D + sqrt(D)) where D is the discriminant
   K<a> := NumberField(minpoly);
   if IsMaximal(EquationOrder(K)) then // nothing to do
