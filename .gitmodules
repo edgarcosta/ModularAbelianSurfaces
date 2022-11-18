@@ -1,0 +1,3 @@
+[submodule "equations/OpenImage"]
+	path = equations/OpenImage
+	url = https://github.com/assaferan/OpenImage.git
