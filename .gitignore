@@ -9,4 +9,6 @@ equations/ModSym/output_data/*
 equations/input_data/*
 equations/output_data/*
 equations/stdout/*
+equations/flasklog
+equations/slow_queries.log
 *.swp
