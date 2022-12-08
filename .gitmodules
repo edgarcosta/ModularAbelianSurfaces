@@ -1,3 +1,6 @@
 [submodule "equations/OpenImage"]
 	path = equations/OpenImage
 	url = https://github.com/AndrewVSutherland/OpenImage.git
+[submodule "equations/Gm-Reduce"]
+	path = equations/Gm-Reduce
+	url = git@github.com:SamSchiavone/Gm-Reduce.git
