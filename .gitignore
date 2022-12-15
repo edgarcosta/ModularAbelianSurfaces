@@ -15,6 +15,7 @@ equations/slow_queries.log
 # Data folders/files
 equations/canonical_models/*
 equations/plane_models/*
+equations/ghyp_models/*
 equations/gonality/*
 equations/graphviz_in/*
 equations/jinvs/*
