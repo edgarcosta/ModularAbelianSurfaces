@@ -3,6 +3,7 @@
 .DS_Store
 *.m~
 *.spec~
+*.py~
 equations/ModSym/input_data/*
 equations/ModSym/tmp.m
 equations/ModSym/output_data/*
@@ -11,4 +12,13 @@ equations/output_data/*
 equations/stdout/*
 equations/flasklog
 equations/slow_queries.log
+# Data folders/files
+equations/canonical_models/*
+equations/plane_models/*
+equations/gonality/*
+equations/graphviz_in/*
+equations/jinvs/*
+equations/rats/*
+upload/picture_labels.txt
+upload/ecnf_data.txt
 *.swp
