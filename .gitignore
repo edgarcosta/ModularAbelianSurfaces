@@ -20,6 +20,7 @@ equations/gonality/*
 equations/graphviz_in/*
 equations/jinvs/*
 equations/rats/*
+equations/timings/*
 upload/picture_labels.txt
 upload/ecnf_data.txt
 *.swp
