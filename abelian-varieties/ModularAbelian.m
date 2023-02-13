@@ -13,7 +13,7 @@ end intrinsic;
 
 intrinsic WriteStderr(s::MonStgElt)
 { write to stderr }
-  E := Open("/dev/stderr", "w");
+  E := Open("/dev/stderr", "a");
   Write(E, s);
   Flush(E);
 end intrinsic;
@@ -269,21 +269,6 @@ intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
 end intrinsic;
 
 
-function PrettyCurve(Y)
-  if Type(BaseRing(Y)) eq FldRat then
-    Y := ReducedMinimalWeierstrassModel(Y);
-    f, h := HyperellipticPolynomials(Y);
-    g := 4*f + h^2;
-    coeffs := Coefficients(g);
-    d := LCM([ Denominator(coeff) : coeff in coeffs ]);
-    coeffs := [ Integers() ! (d*coeff) : coeff in coeffs ];
-    e := GCD(coeffs);
-    coeffs := [ coeff div e : coeff in coeffs ];
-    Y := HyperellipticCurve(Polynomial(coeffs));
-    Y := ReducedMinimalWeierstrassModel(Y);
-  end if;
-  return Y;
-end function;
 
 intrinsic ReconstructModularCurve(f::ModSym) -> BoolElt, Crv
 { TODO: fill in doc }
@@ -764,7 +749,7 @@ TODO: add documentation
       WriteStderr(e);
     end if;
     vtime ModAbVarRec:
-    C := PrettyCurve(C);
+    C := ReducedMinimalWeierstrassModel(C);
     return true, C;
   elif #res gt 0 then
     return true, res[1];
