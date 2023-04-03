@@ -112,7 +112,6 @@ intrinsic PeriodMatrix(f::ModSym, ncoeffs::RngIntElt : prec:=80) -> ModMatFldElt
   S, P, Q := SmithForm(Matrix(Integers(), kernel));
 
   // extract the correct period matrix
-  CC := BaseRing(Pfull);
   PfullNew := Pfull*Matrix(CC, P^-1);
   PNew := Submatrix(PfullNew, 1, 1+ Ncols(PfullNew) - Dimension(f), Dimension(f) div 2, Dimension(f));
   // undo the default_prec
@@ -150,6 +149,58 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   end while;
   CC := ComplexFieldExtra(prec + 10);
   return ChangeRing(P1, CC), e;
+end intrinsic;
+
+
+
+intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt
+  { Compute the normalized period matrix associated to f }
+  // before we defaulted to this guess with the first 2 replaced by 20
+  // clear cache
+  if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt prec + 10 then
+    delete f`PeriodMap;
+  end if;
+
+  vprint ModAbVarRec: Sprintf("Computing period map, prec:=%o, for ", prec);
+  vprint ModAbVarRec: Sprintf("%o...", f);
+  default_prec := Precision(GetDefaultRealField());
+  // this is how we control the precision of the output of Periods
+  SetDefaultRealFieldPrecision(prec + 10);
+
+  B := Basis(CuspidalSubspace(AmbientSpace(f)));
+
+  function matrix_helper(ncoeffs)
+    return Transpose(Matrix([pi_f(b) : b in B])) where pi_f := PeriodMapping(f, ncoeffs);
+  end function;
+
+
+  ncoeffs := 0;
+  ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
+  ncoeffs +:= 3*ncoeffs_inc;
+  vtime ModAbVarRec:
+  P0 := matrix_helper(ncoeffs);
+  ncoeffs +:= ncoeffs_inc;
+  vtime ModAbVarRec:
+  P1 := matrix_helper(ncoeffs);
+  // P0 and P1 live in rings with prec + 20
+  // this checks if they agree up to prec + 10
+  t, e := AlmostEqualMatrix(P0, P1);
+  while not t do
+    vprint ModAbVarRec: Sprintf("Current error: %o", ComplexField(8)!e);
+    P0 := P1;
+    ncoeffs +:= ncoeffs_inc;
+    vprintf ModAbVarRec: "ncoeffs increased to %o\n", ncoeffs;
+    vtime ModAbVarRec:
+    P1 := matrix_helper(ncoeffs);
+    t, e := AlmostEqualMatrix(P0, P1);
+    assert ncoeffs lt 20*ncoeffs_inc; // sanity
+  end while;
+  CC := ComplexFieldExtra(prec + 10);
+  P1 := ChangeRing(P1, CC);
+  // undo the default_prec
+  SetDefaultRealFieldPrecision(default_prec);
+  vprint ModAbVarRec: "Done";
+  return P1, e;
 end intrinsic;
 
 
