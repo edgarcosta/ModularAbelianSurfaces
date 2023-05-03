@@ -15,16 +15,16 @@ hc := eval s[3];
 f:= MakeNewformModSym(level, hc);
 prec := 100;
 QQ := RationalsExtra(prec);
-time Pmap, n := PeriodMappingMatrix(f : prec:=prec);
+//time Pmap, n := PeriodMappingMatrix(f : prec:=prec);
 Af := ModularAbelianVariety(f);
 Hsub, Esub, Hquo, Equo := NewformLattices(f);
 
-Asub := ModularAbelianVariety(f); 
+Asub := ModularAbelianVariety(f);
 J0N := ModularAbelianVariety(CuspidalSubspace(AmbientSpace(f)));
-Aquo := J0N/Complement(Af); 
+Aquo := J0N/Complement(Af);
 Fs := [FrobeniusFormAlternating(E) : E in [Esub, Equo] cat [Matrix(Integers(), IntersectionPairingIntegral(A)) : A in [Asub, Aquo]]];
 if Fs[1] eq Fs[3] and Fs[2] eq Fs[4] then
     print label, true;
-else 
+else
     print label, Fs[1] eq Fs[3], Fs[2] eq Fs[4];
 end if;

@@ -1,5 +1,8 @@
 declare verbose ModAbVarRec, 3;
 
+declare attributes ModSym:
+  integral_homology_subquo; // SeqEnum[Tup]
+
 import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, ReconstructCurveG2, IgusaInvariantsG2;
 
 // One can do better than this for trivial character, N square free, and when cond(chi) is a proper divisor of N, see Stein 9.19,9.21,9.22,
@@ -86,72 +89,6 @@ intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
 end intrinsic;
 */
 
-// use hecke to get the number of correct digits
-intrinsic PeriodMatrix(f::ModSym, ncoeffs::RngIntElt : prec:=80) -> ModMatFldElt
-{ Compute the normalized period matrix associated to f}
-  vprint ModAbVarRec: Sprintf("Computing periods, prec:=%o, ncoeffs:=%o", prec, ncoeffs);
-  vprint ModAbVarRec: Sprintf("%o...", f);
-  default_prec := Precision(GetDefaultRealField());
-  // this is how we control the precision of the output of Periods
-  SetDefaultRealFieldPrecision(prec + 10);
-  vprintf ModAbVarRec: "Computing PeriodMapping(f, %o)\n", ncoeffs;
-  vtime ModAbVarRec:
-  // clear cache if necessary
-  if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt prec + 10 then
-    delete f`PeriodMap;
-  end if;
-  // PeriodMapping gives the periods up to isogeny
-  pi_f := PeriodMapping(f, ncoeffs);
-  // Apply it to the whole space
-  Pfull := Transpose(Matrix([pi_f(b) : b in Basis(CuspidalSubspace(AmbientSpace(f)))]));
-  CC := ComplexFieldExtra(Precision(BaseRing(Pfull)));
-  Pfull := Matrix(CC, Pfull);
-
-  // figure out the relations
-  kernel, b := IntegralRightKernel(Pfull);
-  S, P, Q := SmithForm(Matrix(Integers(), kernel));
-
-  // extract the correct period matrix
-  PfullNew := Pfull*Matrix(CC, P^-1);
-  PNew := Submatrix(PfullNew, 1, 1+ Ncols(PfullNew) - Dimension(f), Dimension(f) div 2, Dimension(f));
-  // undo the default_prec
-  SetDefaultRealFieldPrecision(default_prec);
-  vprint ModAbVarRec: "Done";
-  return PNew;
-end intrinsic;
-
-intrinsic PeriodMatrix(f::ModSym : prec:=80) -> ModMatFldElt
-  { Compute the normalized period matrix associated to f }
-  // before we defaulted to this guess with the first 2 replaced by 20
-  // clear cache
-  if assigned f`PeriodMap then
-    delete f`PeriodMap;
-  end if;
-  ncoeffs := 0;
-  ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
-  ncoeffs +:= 3*ncoeffs_inc;
-  vtime ModAbVarRec:
-  P0 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
-  ncoeffs +:= ncoeffs_inc;
-  vtime ModAbVarRec:
-  P1 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
-  // P0 and P1 live in rings with prec + 20
-  // this checks if they agree up to prec + 10
-  t, e := AlmostEqualMatrix(P0, P1);
-  while not t do
-    vprint ModAbVarRec: Sprintf("Current error: %o", ComplexField(8)!e);
-    P0 := P1;
-    ncoeffs +:= ncoeffs_inc;
-    vtime ModAbVarRec:
-    P1 := PeriodMatrix(f, ncoeffs : prec:=prec + 10);
-    t, e := AlmostEqualMatrix(P0, P1);
-    assert ncoeffs lt 20*ncoeffs_inc; // sanity
-  end while;
-  CC := ComplexFieldExtra(prec + 10);
-  return ChangeRing(P1, CC), e;
-end intrinsic;
-
-
 
 intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   { Compute the normalized period matrix associated to f }
@@ -167,10 +104,11 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   // this is how we control the precision of the output of Periods
   SetDefaultRealFieldPrecision(prec + 10);
 
-  B := Basis(CuspidalSubspace(AmbientSpace(f)));
+  CC := ComplexFieldExtra(prec);
+  B := Basis(f);
 
   function matrix_helper(ncoeffs)
-    return Transpose(Matrix([pi_f(b) : b in B])) where pi_f := PeriodMapping(f, ncoeffs);
+    return ChangeRing(Transpose(Matrix([pi_f(b) : b in B])), CC) where pi_f := PeriodMapping(f, ncoeffs);
   end function;
 
 
@@ -201,6 +139,14 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   SetDefaultRealFieldPrecision(default_prec);
   vprint ModAbVarRec: "Done";
   return P1, e;
+end intrinsic;
+
+
+intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false) -> ModMatFldElt, ModMatRngElt
+  { Compute the period matrix associated to f A_f^sub or A_f^quo }
+  basis, E := Explode(NewformLattices(f)[Quotient select 2 else 1]);
+  P := PeriodMappingMatrix(f : prec := prec);
+  return P*Matrix(BaseRing(P), basis), E;
 end intrinsic;
 
 
@@ -265,8 +211,9 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
 end intrinsic;
 
 
-intrinsic NewformLattices(f::ModSym) -> ModMatRngElt, AlgMatElt, ModMatRngElt, AlgMatElt, AlgMatElt
-  {Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}
+intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
+{Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}
+  if not assigned f`integral_homology_subquo then
     A := AmbientSpace(f);
     CS := CuspidalSubspace(A); // we are assuming that this comes equipped with an integral basis, this is "H"
 
@@ -295,34 +242,35 @@ intrinsic NewformLattices(f::ModSym) -> ModMatRngElt, AlgMatElt, ModMatRngElt, A
     if Nrows(D) gt 0 then
       assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
     end if;
-    
+
     // this basis projects down to the standard basis of (H/If H)_free
     // these are basis for Hquo
     Hquo := Submatrix(Q^-1, Nrows(Q) - Dimension(f) + 1, 1, Dimension(f), Ncols(Q));
 
     assert Rank(VerticalJoin(V, Hquo)) eq Dimension(CS);
-    
+
     //this is the projection of H_sub in (H/If H)_free
     Hsub_in_Hquo := Hsub*Submatrix(Q, 1, Ncols(Q) - Dimension(f) + 1, Nrows(Q), Dimension(f));
-    
+
     //we now invert Hsub_in_Hquo not caring about rescaling
     Hquo_in_Hsub := Matrix(Rationals(), Hsub_in_Hquo)^-1;
     //Denominator(Hquo_in_Hsub);
     Hquo_in_Hsub *:= Denominator(Hquo_in_Hsub);
     Hquo_in_Hsub := Matrix(Integers(), Hquo_in_Hsub);
-    
+
     S := Matrix(Integers(), KernelMatrix(VerticalJoin( Matrix(Rationals(), Hsub*fromCS), -Matrix([Eltseq(b) : b in Basis(f)]))));
     assert Submatrix(S, 1,1, Dimension(f), Dimension(f)) eq 1;
     // how to write Hsub basis in terms of Basis(f)
     Hsub_in_Bf := Submatrix(S, 1,1 + Dimension(f), Dimension(f), Dimension(f));
-    
+
     // how to write Hquo in terms of Basis(f)
     Hquo_in_Bf := Hquo_in_Hsub*Hsub_in_Bf;
-    
+
     Ef := IntersectionPairing(f);
     Esub, Equo := Explode([Matrix(Integers(), A*Denominator(A)) where A := S*Ef*Transpose(S) where S:=Matrix(Rationals(), elt) : elt in [Hsub_in_Bf, Hquo_in_Bf]]);
-    
-    return Hsub, Esub, Hquo, Equo,Hsub_in_Bf;
+    f`integral_homology_subquo := [ <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo> ];
+  end if;
+  return f`integral_homology_subquo;
 end intrinsic;
 
 
