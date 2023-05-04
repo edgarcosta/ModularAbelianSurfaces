@@ -74,23 +74,11 @@ intrinsic MachinePrint(C::CrvHyp) -> MonStgElt
   end if;
 end intrinsic;
 
-/*
- * No Longer need this
-intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
-{ this normalizes  }
-    CC := ComplexFieldExtra(Precision(BaseRing(P)));
-    // Change convention
-    P := Transpose(ChangeRing(P, CC));
-    g := #Rows(P);
-    P1 := Submatrix(P, 1, 1, g, g);
-    P2 := Submatrix(P, 1, g + 1,g, g);
-    P := HorizontalJoin(P2, P1);
-    return P;
-end intrinsic;
-*/
 
 
-intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt
+
+
+intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, FldElt
   { Compute the normalized period matrix associated to f }
   // before we defaulted to this guess with the first 2 replaced by 20
   // clear cache
@@ -138,7 +126,7 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt
   // undo the default_prec
   SetDefaultRealFieldPrecision(default_prec);
   vprint ModAbVarRec: "Done";
-  return P1, e;
+  return P1, ncoeffs, e;
 end intrinsic;
 
 
@@ -149,6 +137,34 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false) -> ModMatFldElt, M
   return P*Matrix(BaseRing(P), basis), E;
 end intrinsic;
 
+intrinsic PeriodMatrixSubMagma(f::ModSym : prec:=80) -> ModMatFldElt
+  { Compute the period matrix associated to f A_f^sub via Magma }
+  _, ncoeffs, _ := PeriodMappingMatrix(f : prec:=prec);
+  P := PeriodsMatrix(f, ncoeffs); // this should use the cached map
+  CC := ComplexFieldExtra(Precision(BaseRing(P)));
+  // Change convention
+  P := Transpose(ChangeRing(P, CC));
+  g := #Rows(P);
+  P1 := Submatrix(P, 1, 1, g, g);
+  P2 := Submatrix(P, 1, g + 1,g, g);
+  P := HorizontalJoin(P2, P1);
+  return P;
+end intrinsic;
+
+/*
+ * No Longer need this
+intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
+{ this normalizes  }
+    CC := ComplexFieldExtra(Precision(BaseRing(P)));
+    // Change convention
+    P := Transpose(ChangeRing(P, CC));
+    g := #Rows(P);
+    P1 := Submatrix(P, 1, 1, g, g);
+    P2 := Submatrix(P, 1, g + 1,g, g);
+    P := HorizontalJoin(P2, P1);
+    return P;
+end intrinsic;
+*/
 
 
 
