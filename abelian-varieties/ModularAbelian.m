@@ -140,7 +140,7 @@ end intrinsic;
 intrinsic PeriodMatrixSubMagma(f::ModSym : prec:=80) -> ModMatFldElt
   { Compute the period matrix associated to f A_f^sub via Magma }
   _, ncoeffs, _ := PeriodMappingMatrix(f : prec:=prec);
-  P := PeriodMappingMatrix(f, ncoeffs); // this should use the cached map
+  P := Periods(f, ncoeffs); // this should use the cached map
   CC := ComplexFieldExtra(Precision(BaseRing(P)));
   // Change convention
   P := Transpose(ChangeRing(P, CC));
