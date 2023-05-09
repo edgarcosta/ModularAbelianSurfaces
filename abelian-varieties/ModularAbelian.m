@@ -92,11 +92,11 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   // this is how we control the precision of the output of Periods
   SetDefaultRealFieldPrecision(prec + 10);
 
-  CC := ComplexFieldExtra(prec);
+  CC := ComplexFieldExtra(prec + 10);
   B := Basis(f);
 
   function matrix_helper(ncoeffs)
-    return ChangeRing(Transpose(Matrix([pi_f(b) : b in B])), CC) where pi_f := PeriodMapping(f, ncoeffs);
+    return ChangeRing(Matrix([pi_f(b) : b in B]), CC) where pi_f := PeriodMapping(f, ncoeffs);
   end function;
 
 
@@ -108,8 +108,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   ncoeffs +:= ncoeffs_inc;
   vtime ModAbVarRec:
   P1 := matrix_helper(ncoeffs);
-  // P0 and P1 live in rings with prec + 20
-  // this checks if they agree up to prec + 10
+  // P0 and P1 live in rings with prec + 10
+  // this checks if they agree up to prec
   t, e := AlmostEqualMatrix(P0, P1);
   while not t do
     vprint ModAbVarRec: Sprintf("Current error: %o", ComplexField(8)!e);
@@ -121,12 +121,11 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
     t, e := AlmostEqualMatrix(P0, P1);
     assert ncoeffs lt 20*ncoeffs_inc; // sanity
   end while;
-  CC := ComplexFieldExtra(prec + 10);
-  P1 := ChangeRing(P1, CC);
+  P1 := ChangeRing(P1, ComplexFieldExtra(prec));
   // undo the default_prec
   SetDefaultRealFieldPrecision(default_prec);
   vprint ModAbVarRec: "Done";
-  return P1, ncoeffs, e;
+  return Transpose(P1), ncoeffs, e;
 end intrinsic;
 
 
@@ -134,14 +133,15 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false) -> ModMatFldElt, M
   { Compute the period matrix associated to f A_f^sub or A_f^quo }
   basis, E := Explode(NewformLattices(f)[Quotient select 2 else 1]);
   P := PeriodMappingMatrix(f : prec := prec);
-  return P*Matrix(BaseRing(P), basis), E;
+  return P*Matrix(BaseRing(P),  Transpose(basis)), E;
 end intrinsic;
 
 intrinsic PeriodMatrixSubMagma(f::ModSym : prec:=80) -> ModMatFldElt
   { Compute the period matrix associated to f A_f^sub via Magma }
   _, ncoeffs, _ := PeriodMappingMatrix(f : prec:=prec);
   P := Matrix(Periods(f, ncoeffs)); // this should use the cached map
-  CC := ComplexFieldExtra(Precision(BaseRing(P)));
+  assert Precision(BaseRing(P)) gt prec;
+  CC := ComplexFieldExtra(prec);
   // Change convention
   P := Transpose(ChangeRing(P, CC));
   g := #Rows(P);
@@ -254,7 +254,7 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
     end while;
     Hsub := KernelMatrix(H);//this is supposed to be H[If], and If = (hp)_p, dim 4
     //If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
-    D, P, Q := SmithForm(V);
+    D, _, Q := SmithForm(V);
     if Nrows(D) gt 0 then
       assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
     end if;
