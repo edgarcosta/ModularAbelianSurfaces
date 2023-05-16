@@ -235,6 +235,7 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 
     _, _, psi := VectorSpace(A);
     fromCS := Matrix(Integers(), [Eltseq(psi(elt)) : elt in Basis(CuspidalSubspace(A))]);
+    assert Abs(Determinant(IntersectionPairing(CS))) eq 1;
 
     p := 1;
     desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
@@ -284,6 +285,8 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 
     Ef := IntersectionPairing(f);
     Esub, Equo := Explode([Matrix(Integers(), A*Denominator(A)) where A := S*Ef*Transpose(S) where S:=Matrix(Rationals(), elt) : elt in [Hsub_in_Bf, Hquo_in_Bf]]);
+    // Esub div:= GCD(Eltseq(Esub)); //???
+    // Equo div:= GCD(Eltseq(Equo));
     f`integral_homology_subquo := [ <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo> ];
   end if;
   return f`integral_homology_subquo;
