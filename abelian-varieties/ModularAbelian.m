@@ -235,7 +235,7 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 
     _, _, psi := VectorSpace(A);
     fromCS := Matrix(Integers(), [Eltseq(psi(elt)) : elt in Basis(CuspidalSubspace(A))]);
-    assert Abs(Determinant(IntersectionPairing(CS))) eq 1;
+    require Abs(Determinant(IntersectionPairing(CS))) eq 1: "The basis of cuspidal subspace is not integral";
 
     p := 1;
     desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
