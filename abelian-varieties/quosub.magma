@@ -17,7 +17,10 @@ prec := 100;
 QQ := RationalsExtra(prec);
 //time Pmap, n := PeriodMappingMatrix(f : prec:=prec);
 Af := ModularAbelianVariety(f);
-Hsub, Esub, Hquo, Equo := NewformLattices(f);
+
+foo := NewformLattices(f);
+Hsub, Esub := Explode(foo[1]);
+Hquo, Equo := Explode(foo[2]);
 
 Asub := ModularAbelianVariety(f);
 J0N := ModularAbelianVariety(CuspidalSubspace(AmbientSpace(f)));
