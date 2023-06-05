@@ -1,5 +1,5 @@
 //parallel --shuf --timeout 1000 --eta -j4 magma -b seq:={} quosub.magma ::: {1..10} >> quosubtests.out
-
+AttachSpec("~/projects/CHIMP/CHIMP.spec");
 AttachSpec("spec");
 
 SetColumns(0);
@@ -26,8 +26,13 @@ Asub := ModularAbelianVariety(f);
 J0N := ModularAbelianVariety(CuspidalSubspace(AmbientSpace(f)));
 Aquo := J0N/Complement(Af);
 Fs := [FrobeniusFormAlternating(E) : E in [Esub, Equo] cat [Matrix(Integers(), IntersectionPairingIntegral(A)) : A in [Asub, Aquo]]];
+S, k := Solution(Matrix(Integers(), Matrix(Rationals(), Hsub) * Matrix( [Eltseq(elt) : elt in Basis(f)])), Matrix(Integers(), [Eltseq(elt) : elt in IntegralBasis(f)]));
+assert Dimension(k) eq 0;
+assert Abs(Determinant(S)) eq 1;
 if Fs[1] eq Fs[3] and Fs[2] eq Fs[4] then
     print label, true;
+    exit 0;
 else
     print label, Fs[1] eq Fs[3], Fs[2] eq Fs[4];
+    exit 1;
 end if;

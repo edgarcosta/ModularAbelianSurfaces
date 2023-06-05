@@ -228,33 +228,35 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   return P2, GeoEndoRepBase2;
 end intrinsic;
 
-intrinsic IntegralBasisCuspidalSuspace(f::ModSym) -> SeqEnum
-{ }
-  A := AmbientSpace(f);
-  BZZ_in_BQQ := Matrix(Integers(), [Eltseq(elt) : elt in IntegralBasis(A)]);
-  delta_ZZ := BoundaryMap(A) * Inverse(BZZ_in_BQQ);
-  return KernelMatrix(Matrix(Integers(), delta));
-end intrinsic;
 
 intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 {Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}
   if not assigned f`integral_homology_subquo then
     A := AmbientSpace(f);
-    CS := CuspidalSubspace(A); // we are assuming that this comes equipped with an integral basis, this is "H"
+    L, phi := Lattice(A);
 
-    _, _, psi := VectorSpace(A);
-    fromCS_QQ := Matrix([Eltseq(psi(elt)) : elt in Basis(CuspidalSubspace(A))]);
-    require Denominator(fromCS_QQ) eq 1: "We expect the Basis to be a Z-span of H_0";
-    fromCS := Matrix(Integers(), fromCS_QQ);
-    require Abs(Determinant(IntersectionPairing(CS))) eq 1: "The basis of cuspidal subspace is not integral";
-    require BoundaryMap(CS) eq 0: "Something is wrong, as the boundary map does not vanish";
+    CS := CuspidalSubspace(A);
+    // compute an integral basis for CS
+    delta := Matrix(Basis(L)) * Matrix(Integers(), BoundaryMap(A));
+    // B is an integral basis for CS
+    B := [phi(b) : b in Basis(Kernel(delta))];
+    fromCS := Matrix(Integers(), [Eltseq(elt) : elt in B]);
 
-    /* Alternatively
-    we take as granted Basis(A) is integral
-    compute the boundary map matrix
-    and use that as the integral basis for the cuspidal subspace
 
-    */
+    // S: B -> Basis(CS)
+    S, K := Solution(
+      Matrix([Eltseq(elt) : elt in B]),
+      Matrix([Eltseq(elt) : elt in Basis(CS)])
+      );
+    assert Dimension(K) eq 0;
+    assert Abs(Determinant(S)) eq 1;
+    if S eq 1 then
+      S := 1;
+    else
+      S := Matrix(Integers(), S);
+    end if;
+    S1 := S^-1;
+
 
     p := 1;
     desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
@@ -266,7 +268,8 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
         while Level(f) mod p eq 0 do
             p := NextPrime(p);
         end while;
-        Tp := Matrix(Integers(), HeckeOperator(CS, p)); //this is 30 x 30
+        // Hecke operator with respect to the integral basis
+        Tp := Matrix(Integers(), S*HeckeOperator(CS, p)*S1);
         h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree 2
         hp := Evaluate(h, Tp);
         H := HorizontalJoin(H, hp);
@@ -274,7 +277,8 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
     end while;
     Hsub := KernelMatrix(H);//this is supposed to be H[If], and If = (hp)_p, dim 4
     //If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
-    D, _, Q := SmithForm(V);
+    // FIXME: replace unused with _ when bug in SmithForm is fixed
+    D, unused, Q := SmithForm(V);
     if Nrows(D) gt 0 then
       assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
     end if;
