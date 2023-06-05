@@ -21,16 +21,18 @@ intrinsic WriteStderr(s::MonStgElt)
   Flush(E);
 end intrinsic;
 
+intrinsic WriteStderr(e::Err)
+{ write to stderr }
+  WriteStderr(Sprint(e) cat "\n");
+end intrinsic;
+
 intrinsic Strip(s::MonStgElt) -> MonStgElt
 { Removes all white space, including newlines, from the string }
  return Join(Split(Join(Split(s," "),""),"\n"),"");
 end intrinsic;
 
 
-intrinsic WriteStderr(e::Err)
-{ write to stderr }
-  WriteStderr(Sprint(e) cat "\n");
-end intrinsic;
+
 
 intrinsic Eltseq(C::CrvHyp) -> SeqEnum
   {retunrns both hyperelliptic polynomials as SeqEnum}
@@ -226,6 +228,13 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   return P2, GeoEndoRepBase2;
 end intrinsic;
 
+intrinsic IntegralBasisCuspidalSuspace(f::ModSym) -> SeqEnum
+{ }
+  A := AmbientSpace(f);
+  BZZ_in_BQQ := Matrix(Integers(), [Eltseq(elt) : elt in IntegralBasis(A)]);
+  delta_ZZ := BoundaryMap(A) * Inverse(BZZ_in_BQQ);
+  return KernelMatrix(Matrix(Integers(), delta));
+end intrinsic;
 
 intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 {Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}
@@ -234,8 +243,18 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
     CS := CuspidalSubspace(A); // we are assuming that this comes equipped with an integral basis, this is "H"
 
     _, _, psi := VectorSpace(A);
-    fromCS := Matrix(Integers(), [Eltseq(psi(elt)) : elt in Basis(CuspidalSubspace(A))]);
+    fromCS_QQ := Matrix([Eltseq(psi(elt)) : elt in Basis(CuspidalSubspace(A))]);
+    require Denominator(fromCS_QQ) eq 1: "We expect the Basis to be a Z-span of H_0";
+    fromCS := Matrix(Integers(), fromCS_QQ);
     require Abs(Determinant(IntersectionPairing(CS))) eq 1: "The basis of cuspidal subspace is not integral";
+    require BoundaryMap(CS) eq 0: "Something is wrong, as the boundary map does not vanish";
+
+    /* Alternatively
+    we take as granted Basis(A) is integral
+    compute the boundary map matrix
+    and use that as the integral basis for the cuspidal subspace
+
+    */
 
     p := 1;
     desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
