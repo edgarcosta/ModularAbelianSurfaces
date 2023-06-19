@@ -16,7 +16,7 @@ intrinsic DualLattice(Omega::ModMatFldElt) -> ModMatFldElt
     CC<I> := BaseRing(Omega);
     g := Nrows(Omega);
     B := HorizontalJoin(IdentityMatrix(CC, g), I*IdentityMatrix(CC, g));
-    P := ImaginaryPart(Transpose(B) * Conjugate(Omega));
+    P := Imaginary(Transpose(B) * Conjugate(Omega));
     Bprime := B * ChangeRing(Transpose(Inverse(P)), CC);
     return Bprime;
 end intrinsic;
