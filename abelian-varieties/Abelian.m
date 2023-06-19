@@ -1,12 +1,9 @@
-intrinsic Imaginary(M::ModMatFldElt[FldCom]) -> ModMatFldElt[FldRe]
+
+intrinsic Imaginary(M::Mtrx[FldCom]) -> Mtrx[FldRe]
 { The imaginary part of M }
-    return Matrix([[Im(elt) : elt in Eltseq(row)] : row in Rows(M)]);
+    return Matrix([[Imaginary(elt) : elt in Eltseq(row)] : row in Rows(M)]);
 end intrinsic;
 
-intrinsic Im(M::ModMatFldElt[FldCom]) -> ModMatFldElt[FldRe]
-{ The imaginary part of M }
-    return Imaginary(M);
-end intrinsic;
 
 intrinsic DualLattice(Omega::ModMatFldElt) -> ModMatFldElt
 {
@@ -69,7 +66,7 @@ intrinsic AdjugateMatrix(M::AlgMatElt) -> AlgMatElt
 end intrinsic;
 
 // To show up at some point in Endomorpisms package
-intrinsic PrincipalMinors(M::ModMatFldElt) -> SeqEnum[FldElt]
+intrinsic PrincipalMinors(M::Mtrx) -> SeqEnum[FldElt]
 {Return the principal minors of M}
     require Nrows(M) eq Ncols(M): "the matrix needs to be square";
     return [Minor(M, I, I) where I := [j..n] : j  in [1..n]] where n:=Nrows(M);
