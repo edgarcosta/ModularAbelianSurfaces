@@ -111,6 +111,6 @@ intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> 
     // extract combinations with determinant 1
     solutions := &cat [SetToSequence(elt) : elt in IntegralPointsConic(abc, [1,-1])];
     // check the positivity condition
-    ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | forall{Evaluate(m, coord) lt CC`epsinv : m in minors}];
+    ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | forall{Evaluate(m, coord) gt CC`epsinv : m in minors}];
     return ppols;
 end intrinsic;
