@@ -3,6 +3,23 @@ declare verbose ModAbVarRec, 3;
 declare attributes ModSym:
   integral_homology_subquo; // SeqEnum[Tup]
 
+
+intrinsic LMFDBNewform(label::MonStgElt) -> ModSym
+{ Return modular form given label }
+    filenames := GetFilenames(MakeNewformModSym);
+    assert #filenames eq 1;
+
+    dirname := "/" cat Join(s[1..(#s - 1)], "/") where s := Split(filenames[1,1],"/");
+    for elt in getrecs(dirname cat "/labelswithhecke.txt") do
+        if elt[1] eq label then
+            level := StringToInteger(elt[2]);
+            hc := eval elt[3];
+            break;
+        end if;
+    end for;
+    return MakeNewformModSym(level, hc);
+end intrinsic;
+
 import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, ReconstructCurveG2, IgusaInvariantsG2;
 
 // One can do better than this for trivial character, N square free, and when cond(chi) is a proper divisor of N, see Stein 9.19,9.21,9.22,
