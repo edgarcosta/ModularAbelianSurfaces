@@ -34,7 +34,7 @@ Output: Omega^v_Q, g by 2g complex matrix arising from the dual abelian variety 
 end intrinsic;
 
 
-intrinsic SelfDualHomomorphismsg(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum, Map
+intrinsic SelfDualHomomorphisms(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum, Map
 {
     Input: Omega, 2g by 2g complex matrix representing a complex torus A, together with an (alternating) 2g by 2g integer matrix E irepresenting a polarization A to A^v (defined over Q)
 
