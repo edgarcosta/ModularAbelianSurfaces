@@ -58,7 +58,7 @@ end intrinsic;
 
 
 // To show up at some point in Endomorpisms package
-intrinsic AdjugateMatrix(M::AlgMatElt) -> AlgMatElt
+intrinsic AdjugateMatrix(M::Mtrx) -> Mtrx
 {
     The adjugate matrix, i.e., Adj(A)*A = det(A) = A*Adj(A)
 }
