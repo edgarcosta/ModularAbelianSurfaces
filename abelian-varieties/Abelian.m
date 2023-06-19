@@ -42,7 +42,7 @@ intrinsic SelfDualHomomorphisms(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum, M
     return skewZZ, hToL;
 end intrinsic;
 
-intrinsic RationalPolarizationBasis(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum
+intrinsic RationalSelfDualHomomorphisms(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum
 {
     Input: Omega, 2g by 2g complex matrix representing a complex torus A, together with an (alternating) 2g by 2g integer matrix E irepresenting a polarization A to A^v (defined over Q)
 
