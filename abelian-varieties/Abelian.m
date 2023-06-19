@@ -1,3 +1,12 @@
+intrinsic Imaginary(M::AlgMatElt) -> AlgMatElt
+{ The imaginary part of M }
+    return Matrix([[Im(elt) : elt in Eltseq(row)] : row in Rows(M)]);
+end intrinsic;
+
+intrinsic Im(M::AlgMatElt) -> AlgMatElt
+{ The imaginary part of M }
+    return Imaginary(M);
+end intrinsic;
 
 intrinsic DualLattice(Omega::ModMatFldElt) -> ModMatFldElt
 {
