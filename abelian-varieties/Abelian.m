@@ -1,9 +1,9 @@
-intrinsic Imaginary(M::ModMatFldElt[FldCom]) -> ModMatFldElt[FldCom]
+intrinsic Imaginary(M::ModMatFldElt[FldCom]) -> ModMatFldElt[FldRe]
 { The imaginary part of M }
     return Matrix([[Im(elt) : elt in Eltseq(row)] : row in Rows(M)]);
 end intrinsic;
 
-intrinsic Im(M::ModMatFldElt[FldCom]) -> ModMatFldElt[FldCom]
+intrinsic Im(M::ModMatFldElt[FldCom]) -> ModMatFldElt[FldRe]
 { The imaginary part of M }
     return Imaginary(M);
 end intrinsic;
