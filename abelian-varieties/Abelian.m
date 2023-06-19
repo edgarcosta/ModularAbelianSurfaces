@@ -105,7 +105,8 @@ intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> 
     Return all principal polarizations on Omega in the span of B := [B_1, B_2] up to automorphism, where Omega is the period matrix of A, and B_i are self-dual homomorphisms A to A^v linearly independent.
 
 }
-    require #B eq 2: "Only implemented for combinations of two polarizations, as we rely on computing integral points on a conic in A^2";
+    n := #B;
+    require n eq 2: "Only implemented for combinations of two polarizations, as we rely on computing integral points on a conic in A^2";
     pf, minors := PfaffianAndMinors(B, Omega);
     CC := BaseRing(Parent(minors[1]));
     // extract conic
