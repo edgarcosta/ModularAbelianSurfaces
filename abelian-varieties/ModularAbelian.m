@@ -14,24 +14,6 @@ intrinsic SturmBound (N::RngIntElt, k::RngIntElt) -> RngIntElt
     return Integers()!Floor(k*m/12);
 end intrinsic;
 
-intrinsic WriteStderr(s::MonStgElt)
-{ write to stderr }
-  E := Open("/dev/stderr", "a");
-  Write(E, s);
-  Flush(E);
-end intrinsic;
-
-intrinsic WriteStderr(e::Err)
-{ write to stderr }
-  WriteStderr(Sprint(e) cat "\n");
-end intrinsic;
-
-intrinsic Strip(s::MonStgElt) -> MonStgElt
-{ Removes all white space, including newlines, from the string }
- return Join(Split(Join(Split(s," "),""),"\n"),"");
-end intrinsic;
-
-
 
 
 intrinsic Eltseq(C::CrvHyp) -> SeqEnum
@@ -596,7 +578,7 @@ TODO: add documentation
       end if;
       return 2;
     end function;
-    degdisc := [<Degree(R), Discriminant(R), TypeRank(elt), #Strip(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
+    degdisc := [<Degree(R), Discriminant(R), TypeRank(elt), #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
     positions := [1..#lst];
     vprintf ModAbVarRec: "UnSorted: %o\n%o\n", degdisc, lst;
     ParallelSort(~degdisc, ~positions);
