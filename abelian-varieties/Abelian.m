@@ -73,18 +73,14 @@ intrinsic PrincipalMinors(M::Mtrx) -> SeqEnum[FldElt]
 end intrinsic;
 
 
-function RealPolynomial(f)
-    coeff, mon := CoefficientsAndMonomials(f);
-    return &+[Real(c)*mon[i] : i->c in coeff];
-end function;
-
-
-
 function PfaffianAndMinors(Es, P)
+
     CC<I> := BaseRing(P);
     n := #Es;
-    R<[x]> := PolynomialRing(Integers(), n);
-    RCC<[y]> := PolynomialRing(CC, n);
+    R := PolynomialRing(Integers(), n);
+    RCC := PolynomialRing(CC, n);
+
+
     ER := &+[R.i * ChangeRing(Ei, R) : i->Ei in Es];
     pf := Pfaffian(ER);
     PRCC := ChangeRing(P, RCC);
@@ -92,9 +88,14 @@ function PfaffianAndMinors(Es, P)
     ERCC_inverse := ChangeRing(AdjugateMatrix(ER), RCC);
     M := I*PRCC*ERCC_inverse*PRCC_star;
     minors := PrincipalMinors(M);
+
+    RRR := PolynomialRing(RealField(CC), n);
+    function RealPolynomial(f)
+        coeff, mon := CoefficientsAndMonomials(f);
+        return &+[Real(c)*RRR!mon[i] : i->c in coeff];
+    end function;
     return pf, [RealPolynomial(elt) : elt in minors];
 end function;
-
 
 
 intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> SeqEnum[AlgMatElt]
@@ -109,8 +110,12 @@ intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> 
     // extract conic
     abc := [MonomialCoefficient(pf, [2-i,i]) : i in [0..2]];
     // extract combinations with determinant 1
-    solutions := &cat [SetToSequence(elt) : elt in IntegralPointsConic(abc, [1,-1])];
-    // check the positivity condition
-    ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | forall{Evaluate(m, coord) gt CC`epsinv : m in minors}];
+    sols := IntegralPointsConic(abc, [1,-1]);
+    solutions := &cat [SetToSequence(elt) : elt in sols];
+    // for each connic there are 2 connected components, the action by tau moves along component, and the action by -1 swaps them
+    // tau is (the square of) the fundamental unit (if its norm is -1) with both embeddings positive
+    solutions cat:= [[-elt[1], -elt[2]] : elt in solutions];
+    // the positivity condition is picking one of the 4 connected components of the two conics
+    ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | &and[ Evaluate(m, coord) gt CC`epsinv : m in minors]];
     return ppols;
 end intrinsic;
