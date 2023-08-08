@@ -129,6 +129,6 @@ intrinsic RationalPrincipalPolarizations(Omega, E) -> SeqEnum
     PPs := PrincipalPolarizations(Omega, self_dual_homomorphisms);
     PPs := [Matrix(Integers(), elt) : elt in PPs];
     CC := BaseRing(Omega);
-    return [<Omega*Transpose(Matrix(CC, F)), F> where _, F := FrobeniusFormAlternating(elt) : elt in PPs];
+    return [<Omega*Transpose(Matrix(CC, F)), Transpose(F)> where _, F := FrobeniusFormAlternating(elt) : elt in PPs];
 end intrinsic;
 
