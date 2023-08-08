@@ -119,3 +119,16 @@ intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> 
     ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | &and[ Evaluate(m, coord) gt CC`epsinv : m in minors]];
     return ppols;
 end intrinsic;
+
+
+intrinsic RationalPrincipalPolarizations(Omega, E) -> SeqEnum
+{
+    Returns all rational principal polarizations for Omega with the pairing E, together with the change of basis.
+}
+    self_dual_homomorphisms := [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)];
+    PPs := PrincipalPolarizations(Omega, self_dual_homomorphisms);
+    PPs := [Matrix(Integers(), elt) : elt in PPs];
+    CC := BaseRing(Omega);
+    return [<Omega*Transpose(Matrix(CC, F)), F> where _, F := FrobeniusFormAlternating(elt) : elt in PPs];
+end intrinsic;
+
