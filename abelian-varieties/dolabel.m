@@ -3,8 +3,6 @@ AttachSpec("~/projects/ModularCurves/abelian-varieties/spec");
 
 s := Split(input, ":");
 label := s[1];
-level := StringToInteger(s[2]);
-hc := eval s[3];
 prec := StringToInteger(prec);
 f := LMFDBNewform(label);
 QQ := RationalsExtra(prec);
