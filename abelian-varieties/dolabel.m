@@ -9,9 +9,9 @@ prec := StringToInteger(prec);
 f := LMFDBNewform(label);
 QQ := RationalsExtra(prec);
 
-Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
-CC := BaseRing(Omega);
 try
+  Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
+  CC := BaseRing(Omega);
   res_sub := ReconstructRationalGenus2Curves(Omega, E);
   Hquo_in_Hsub := Transpose(f`integral_homology_subquo[3]);
   Omega_quo, E_quo := PeriodMatrix(f : prec:=prec, Quotient:=true);
