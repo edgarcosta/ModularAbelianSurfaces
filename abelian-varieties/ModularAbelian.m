@@ -238,7 +238,39 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
   return P2, E2, R, GeoEndoRepBase2, EquationOrder(K2);
 end intrinsic;
 
-
+intrinsic ReconstructRationalGenus2Curves(Omega::ModMatFldElt, E::AlgMatElt : Saturate:=true) -> List
+  {From a period matrix Omega and a pairing E, return curves associated to the abelian variety 
+  and the abelian variety with the maximal endomorphism order (if Saturate)}
+    function Auxiliar(Omega, E)
+        PPs := RationalPrincipalPolarizations(Omega, E);
+        QQ := RationalsExtra(Precision(BaseRing(Omega)));
+        res := [* *];
+        for pp in PPs do
+            newOmega, F := Explode(pp); // newOmega == Omega * F
+            C, h, b, e := ReconstructCurveG2(newOmega, QQ);
+            if b then
+                Append(~res, <F, C>);
+            else
+                Append(~res, <F, false>);
+            end if;
+        end for;
+        return res;
+    end function;
+    res := Auxiliar(Omega, E);
+    if not Saturate then
+        return res;
+    end if;
+    Omega_max, E_max, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
+    if R eq 1 then
+        res_max := res;
+    else
+        res_max := [* <R*elt[1], elt[2]> : elt in Auxiliar(Omega_max, E_max) *];
+    end if;
+    if NarrowClassNumber(EndQQ) eq 1 then
+        assert #res_max ge 1; // maybe we should just check that #RationalPrincipalPolarizations > 1
+    end if;
+    return [* R eq 1, res, res_max *];
+end intrinsic;
 
 intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 {Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}
@@ -325,6 +357,7 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
   end if;
   return f`integral_homology_subquo;
 end intrinsic;
+
 
 
 /*
