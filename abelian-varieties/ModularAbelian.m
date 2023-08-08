@@ -168,8 +168,7 @@ end intrinsic;
 */
 
 
-
-intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
+intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatFldElt, AlgMatElt, AlgMatElt, SeqEnum, RngOrd
 {
   Given a period matrix P for a dim 2 modular forms space with trivial character
   such that the coefficient ring index is > 1, return a period matrix for an isogenous abelian variety
@@ -191,9 +190,12 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   assert one eq 1 or one eq -1;
   minpoly := MinimalPolynomial(gen); //need to make (D + sqrt(D)) where D is the discriminant
   K<a> := NumberField(minpoly);
+
   if IsMaximal(EquationOrder(K)) then // nothing to do
-    return P, GeoEndoRepBase;
+    return P, E, IdentityMatrix(Integers(), Ncols(P)),  GeoEndoRepBase, EquationOrder(K);
   end if;
+
+  // Now we compute the isogeny R, such that P*R is an abelian variety with maximal order
   D:= Discriminant(Integers(K));
   x := Parent(minpoly).1;
   sqrtDpoly := x^2 - D;
@@ -202,11 +204,23 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   sqrtD := &+[c*gen^(i-1) : i->c in Eltseq(rt)];
   DpSqrtD := D*one + sqrtD;
   CC := BaseRing(P);
-  AuxP := Transpose(Matrix(Rows(Transpose(2*P)) cat Rows(Transpose(P*Matrix(CC, DpSqrtD)))));
-  kernel, bool := IntegralRightKernel(AuxP);
+  // We now compute the intersection of 2*Lambda with (D + Sqrt(D))*Lambda
+  kernel, bool := IntegralRightKernel(HorizontalJoin(P*2, P*Matrix(CC, DpSqrtD)));
   assert bool;
-  S, P, Q := SmithForm(Matrix(Integers(), kernel));
-  P2 := Submatrix(AuxP*Matrix(CC, P^-1), 1, 5, 2, 4);
+
+  S, T, _ := SmithForm(Matrix(Integers(), kernel));
+  assert Submatrix(S, 1, 1, 4, 4) eq 1;
+  assert Submatrix(S, 5, 1, 4, 4) eq 0;
+  Tinv := T^-1;
+
+  // we now should compute a matrix R in M_2g(ZZ)
+  // such that P2 = P*R, where End(P2) = ZZ[(D + Sqrt(D))/2]
+  A := Submatrix(Tinv, 1, 5, 4, 4);
+  B := Submatrix(Tinv, 5, 5, 4, 4);
+  R := 2*A + DpSqrtD*B;
+
+  P2 := P*Matrix(CC, R);
+  E2 := Transpose(R)*E*R;
   vprint ModAbVarRec: "Computing GeometricEndomorphismRepresentation...";
   vtime ModAbVarRec:
   GeoEndoRep2 := GeometricEndomorphismRepresentation(P2, QQ);
@@ -220,12 +234,13 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt) -> ModMatFldElt, SeqEnum
   minpoly2 := MinimalPolynomial(GeoEndoRepBase2[2][1]);
   K2<a> := NumberField(minpoly2);
   require IsMaximal(EquationOrder(K2)) : "something went wrong, we didn't get the maximal order...";
-  //exp := MinimalPolynomial(Integers(K).2);
-  //exp2 := MinimalPolynomial(-Integers(K).2);
-  //require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
+  exp := MinimalPolynomial(Integers(K).2);
+  exp2 := MinimalPolynomial(-Integers(K).2);
+  require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
   vprint ModAbVarRec: "Done";
-  return P2, GeoEndoRepBase2;
+  return P2, E2, R, GeoEndoRepBase2, EquationOrder(K2);
 end intrinsic;
+
 
 
 intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
