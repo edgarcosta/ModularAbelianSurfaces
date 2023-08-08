@@ -19,7 +19,7 @@ try
   res_quo_from_sub := [* res_quo[1], [* <Hquo_in_Hsub*elt[1], elt[2]> : elt in res_quo[2] *], [* <Hquo_in_Hsub*elt[1], elt[2]> : elt in res_quo[3] *] *];
 catch e
   WriteStderr(e);
-  print StripWhiteSpace(Join([label, "FAILED", Join(Split(Join(Split(Sprint(e), "\n"),"\\n"), "  "), " ")], ":"));
+  print Join([label, "FAILED", Join(Split(Join(Split(Sprint(e), "\n"),"\\n"), "  "), " ")], ":");
   exit 1;
 end try;
 
