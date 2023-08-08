@@ -234,9 +234,6 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
   minpoly2 := MinimalPolynomial(GeoEndoRepBase2[2][1]);
   K2<a> := NumberField(minpoly2);
   require IsMaximal(EquationOrder(K2)) : "something went wrong, we didn't get the maximal order...";
-  exp := MinimalPolynomial(Integers(K).2);
-  exp2 := MinimalPolynomial(-Integers(K).2);
-  require comp in {exp, exp2} : Sprintf("%o \noin {%o, %o}", comp, exp, exp2);
   vprint ModAbVarRec: "Done";
   return P2, E2, R, GeoEndoRepBase2, EquationOrder(K2);
 end intrinsic;
