@@ -309,7 +309,7 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
     Esub, Equo := Explode([Matrix(Integers(), A*Denominator(A)) where A := S*Ef*Transpose(S) where S:=Matrix(Rationals(), elt) : elt in [Hsub_in_Bf, Hquo_in_Bf]]);
     // Esub div:= GCD(Eltseq(Esub)); //???
     // Equo div:= GCD(Eltseq(Equo));
-    f`integral_homology_subquo := [ <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo> ];
+    f`integral_homology_subquo := [* <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo>, Hquo_in_Hsub *];
   end if;
   return f`integral_homology_subquo;
 end intrinsic;
