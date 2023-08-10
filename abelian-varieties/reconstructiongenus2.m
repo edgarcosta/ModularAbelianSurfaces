@@ -338,6 +338,8 @@ function ReconstructCurveG2(P, K : Base:=false, Dom:=[-5..5], UpperBound:=16, G2
   if #rows eq 1 then
     row := Eltseq(rows[1]);
     Lambda := &+[ row[i]*As[i] : i in [1..#As] ];
+    R := &+[ row[i]*Rs[i] : i in [1..#Rs] ];
+    assert Abs(Determinant(R)) eq 1;
     lam := Lambda[1,1];
   else
     found := false;
