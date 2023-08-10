@@ -247,7 +247,7 @@ intrinsic ReconstructRationalGenus2Curves(Omega::ModMatFldElt, E::AlgMatElt : Sa
         res := [* *];
         for pp in PPs do
             newOmega, F := Explode(pp); // newOmega == Omega * F
-            C, h, b, e := ReconstructCurveG2(newOmega, QQ);
+            C, h, b, e := ReconstructCurveG2(newOmega, QQ : Base:=true);
             if b then
                 Append(~res, <F, C>);
             else

@@ -310,7 +310,7 @@ function ReconstructCurveG2(P, K : Base:=false, Dom:=[-5..5], UpperBound:=16, G2
   fCC, tau, P := Explode(G2CC);
 
   // one could directly call them from JCC, but the function below also normalizes them
-  JCC := IgusaInvariantsG2(P : G2CC:=G2CC);
+  JCC := IgusaInvariantsG2(P : G2CC:=G2CC); //Edgar: is this really worth it to pass G2CC?
   _, _, _, _, J10 := Explode(JCC);
 
   if Abs(J10)^2 lt CC`epscomp then
@@ -384,17 +384,25 @@ function ReconstructCurveG2(P, K : Base:=false, Dom:=[-5..5], UpperBound:=16, G2
   end if;
   vprint CurveRec : "done.";
 
-  R := PolynomialRing(L);
-  f := R!coeffs;
-  Y := HyperellipticCurve(f);
   YCC := RiemannSurface(fCC, 2 : Precision := Precision(CC) + 10);
   Q := ChangeRing(YCC`BigPeriodMatrix, CC) / 2;
 
-  /* The next line functions as an assertion */
+
+  // The next lines functions as an assertion
   vprint CurveRec, 2 : "Check for isomorphism...";
+  /*
+  //Edgar to Jeroen: A doesnt necessarily need to be the identity...
   A := IdentityMatrix(CC, 2);
   R := HomologyRepresentation(A, P, Q);
+  */
+  // instead check that we have an isomorphism defined over K associated to R
+  // R is the solution we found for the twist and Determinant(R) eq 1
+  b, _ := AlgebraizeElementsExtra(Eltseq(TangentRepresentation(R, P, Q)), K);
+  assert b;
   vprint CurveRec, 2 : "done.";
+
+  f := PolynomialRing(L)!coeffs;
+  Y := HyperellipticCurve(f);
   return Y, hKL, true, _;
 end function;
 
