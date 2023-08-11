@@ -8,6 +8,7 @@ f := LMFDBNewform(label);
 QQ := RationalsExtra(prec);
 
 try
+function Core(f, prec);
   Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
   CC := BaseRing(Omega);
   res_sub := ReconstructRationalGenus2Curves(Omega, E);
@@ -29,6 +30,6 @@ function MachinePrintRes(res)
     return [Sprint(res[1]), Sprint([TupleIsogCurve(elt) : elt in res[2]]), Sprint([TupleIsogCurve(elt) : elt in res[3]])];
 end function;
 
-print StripWhiteSpace(Join([label] cat MachinePrintRes(res_sub) cat MachinePrintRes(res_quo), ":"));
+print StripWhiteSpace(Join([label] cat MachinePrintRes(res_sub) cat MachinePrintRes(res_quo_from_sub), ":"));
 
 exit 0;
