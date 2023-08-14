@@ -37,8 +37,20 @@ intrinsic SelfDualHomomorphisms(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum, M
 
     Output: A Z-basis of self-dual homomorphisms from A to A^v represented as 2g by 2g integer matrices, along with their g by g tangent representation
 }
+    function SkewSymmetricHomomorphisms(HomRep)
+        if #HomRep eq 0 then
+            return HomRep;
+        end if;
+        Rs := [elt[2] : elt in HomRep];
+        M := Matrix(Integers(), [Eltseq(Ri + Transpose(Ri)) : Ri in Rs]);
+        rows := Rows(KernelMatrix(M));
+        PA := Parent(HomRep[1][1]);
+        PR := Parent(HomRep[1][2]);
+        return [ [* &+[PA | row[i]*HomRep[i][1] : i->_ in HomRep], &+[PR | row[i]*HomRep[i][2] : i->_ in HomRep] *] : row in rows ];
+    end function;
+
     pairs, hToL := GeometricHomomorphismRepresentation(Omega, DualLatticeWithRespectToPairing(Omega, E), RationalsExtra(Precision(BaseRing(Omega))));
-    skewZZ := [* elt : elt in pairs | elt[2] + Transpose(elt[2]) eq 0 *];
+    skewZZ := SkewSymmetricHomomorphisms(pairs);
     return skewZZ, hToL;
 end intrinsic;
 
