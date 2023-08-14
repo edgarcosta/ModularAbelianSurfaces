@@ -5,15 +5,24 @@ s := Split(input, ":");
 label := s[1];
 prec := StringToInteger(prec);
 
+if assigned verbose then
+  verbose := StringToInteger(verbose);
+  SetVerbose("ModAbVarRec", verbose);
+  SetVerbose("CurveRec", verbose);
+end if;
+
 function Core(label, prec);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
   Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
   CC := BaseRing(Omega);
-  res_sub := ReconstructRationalGenus2Curves(Omega, E);
+  euler_factors := function(p)
+    return Reverse(CharpolyOfFrobenius(f, p));
+  end function;
+  res_sub := RationalGenus2CurvesFromPolarization(Omega, E, f);
   Hquo_in_Hsub := Transpose(f`integral_homology_subquo[3]);
   Omega_quo, E_quo := PeriodMatrix(f : prec:=prec, Quotient:=true);
-  res_quo := ReconstructRationalGenus2Curves(Omega_quo, E_quo);
+  res_quo := RationalGenus2CurvesFromPolarization(Omega_quo, E_quo, f);
   res_quo_from_sub := [* res_quo[1], [* <Hquo_in_Hsub*elt[1], elt[2]> : elt in res_quo[2] *], [* <Hquo_in_Hsub*elt[1], elt[2]> : elt in res_quo[3] *] *];
   return res_sub, res_quo_from_sub;
 end function;

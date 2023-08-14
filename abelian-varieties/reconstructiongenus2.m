@@ -270,11 +270,9 @@ function AlgebraizedInvariantsG2(inp, K : Base:=false, UpperBound:=16, G2CC:=fal
 end function;
 
 
-intrinsic IntegralReconstructionIgusaInvariants(inp : G2CC:=false) -> BoolElt, SeqEnum[RntIntElt], FldComElt
+intrinsic IntegralReconstructionIgusaInvariants(inp : G2CC:=false, Reduce:=true) -> BoolElt, SeqEnum[RntIntElt], FldComElt
   { reconstructs the Igusa invariants in ZZ, the third argument is the error }
-  vprintf CurveRec : "Algebraizing %o invariants...\n", type;
-  // We only support Igusa, Modular invariants, jInvariants
-  assert type in ["Igusa", "Modular", "j"];
+  vprintf CurveRec : "IntegralReconstructionIgusaInvariants...\n";
 
   CC := BaseRing(Parent(inp));
   g := Nrows(inp);
@@ -284,27 +282,27 @@ intrinsic IntegralReconstructionIgusaInvariants(inp : G2CC:=false) -> BoolElt, S
     tau := ReduceSmallPeriodMatrix(tau);
   end if;
 
-  vprintf CurveRec : "Computing %o invariants over CC...\n", type;
-  vtime CurveRec: invCC := IgusaInvariantsG2(tau : G2CC:=G2CC, Reduce:=false);
+  vprintf CurveRec : "Computing Igusa invariants over CC...\n";
+  vtime CurveRec: JCC := IgusaInvariantsG2(tau : G2CC:=G2CC, Reduce:=false);
 
-  invCC := JCC;
   weights := [1,2,3,4,5];
   JQQ := [];
   maxe := 0;
   for i->w in weights do
-      _, q := RationalReconstruction(invCC[i]);
+      _, q := RationalReconstruction(JCC[i]);
       Append(~JQQ, q);
-      _, e := AlmostEqual(invCC[i], q);
+      _, e := AlmostEqual(JCC[i], q);
       maxe := Max(e, maxe);
       if e^2 gt CC`epscomp then
         return false, JQQ, maxe;
       end if;
       f, p := PowerFreePart(Rationals()!Denominator(q), w);
       s := &*PrimeDivisors(Integers()!f);
-      invCC := WPSMultiply(weights, invCC, s * p);
+      JCC := WPSMultiply(weights, JCC, s * p);
       JQQ := WPSMultiply(weights[1..i], JQQ, s * p);
   end for;
 
+  vprintf CurveRec : "IntegralReconstructionIgusaInvariants... done";
   return true, JQQ, maxe;
 end intrinsic;
 
