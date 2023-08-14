@@ -20,7 +20,7 @@ intrinsic LMFDBNewform(label::MonStgElt) -> ModSym
     return MakeNewformModSym(level, hc);
 end intrinsic;
 
-import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, ReconstructCurveG2, IgusaInvariantsG2;
+import "reconstructiongenus2.m" : AlgebraizedInvariantsG2, IgusaInvariantsG2;
 
 // One can do better than this for trivial character, N square free, and when cond(chi) is a proper divisor of N, see Stein 9.19,9.21,9.22,
 // but this bound (due to Buzzard) works for all spaces M_k(N,chi) and is best possible in some cases, see Stein 9.20
@@ -247,7 +247,7 @@ intrinsic ReconstructRationalGenus2Curves(Omega::ModMatFldElt, E::AlgMatElt : Sa
         res := [* *];
         for pp in PPs do
             newOmega, F := Explode(pp); // newOmega == Omega * F
-            C, h, b, e := ReconstructCurveG2(newOmega, QQ : Base:=true);
+            C, h, b, e := ReconstructGenus2Curve(newOmega, QQ : Base:=true);
             if b then
                 Append(~res, <F, C>);
             else
@@ -472,7 +472,7 @@ intrinsic ReconstructIsomorphicGenus2Curve(P::ModMatFldElt : UpperBound:=16, tau
     // over a number field this is sometimes suprisingly successful
     vprintf ModAbVarRec: "Reconstructing curve by matching tangent representation...";
     vtime ModAbVarRec:
-    C, hL, b, e := ReconstructCurveG2(P, QQ : UpperBound:=UpperBound);
+    C, hL, b, e := ReconstructGenus2Curve(P, QQ : UpperBound:=UpperBound);
     if b then
       vprintf ModAbVarRec: "Done\n C = %o\n" , C;
       igusa := IgusaInvariants(C);
@@ -812,7 +812,7 @@ TODO: add documentation
           // over a number field this is sometimes suprisingly successful
           // and if the igusa invariants are over a NumberField there is not much u
           vtime ModAbVarRec:
-          C, _, b := ReconstructCurveG2(Pnew, QQ : UpperBound:=UpperBound);
+          C, _, b := ReconstructGenus2Curve(Pnew, QQ : UpperBound:=UpperBound);
           if b then
             vprintf ModAbVarRec: "Done\n C = %o\n" , C;
           else

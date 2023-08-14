@@ -216,7 +216,6 @@ function AlgebraizedInvariantsG2(inp, K : Base:=false, UpperBound:=16, G2CC:=fal
   if type eq "Igusa" then
     // if we already did the work with Theta derivatives
     vtime CurveRec: invCC := IgusaInvariantsG2(tau : G2CC:=G2CC, Reduce:=false);
-    print invCC;
   elif type eq "Modular" then
     vtime CurveRec: invCC := ModularInvariantsG2(tau : Reduce:=false);
   elif type eq "j" then
@@ -270,6 +269,45 @@ function AlgebraizedInvariantsG2(inp, K : Base:=false, UpperBound:=16, G2CC:=fal
 
 end function;
 
+
+intrinsic IntegralReconstructionIgusaInvariants(inp : G2CC:=false) -> BoolElt, SeqEnum[RntIntElt], FldComElt
+  { reconstructs the Igusa invariants in ZZ, the third argument is the error }
+  vprintf CurveRec : "Algebraizing %o invariants...\n", type;
+  // We only support Igusa, Modular invariants, jInvariants
+  assert type in ["Igusa", "Modular", "j"];
+
+  CC := BaseRing(Parent(inp));
+  g := Nrows(inp);
+  assert g eq 2;
+  P, tau := BigAndSmallPeriodMatrix(inp);
+  if Reduce then // this speeds up the Theta computations
+    tau := ReduceSmallPeriodMatrix(tau);
+  end if;
+
+  vprintf CurveRec : "Computing %o invariants over CC...\n", type;
+  vtime CurveRec: invCC := IgusaInvariantsG2(tau : G2CC:=G2CC, Reduce:=false);
+
+  invCC := JCC;
+  weights := [1,2,3,4,5];
+  JQQ := [];
+  maxe := 0;
+  for i->w in weights do
+      _, q := RationalReconstruction(invCC[i]);
+      Append(~JQQ, q);
+      _, e := AlmostEqual(invCC[i], q);
+      maxe := Max(e, maxe);
+      if e^2 gt CC`epscomp then
+        return false, JQQ, maxe;
+      end if;
+      f, p := PowerFreePart(Rationals()!Denominator(q), w);
+      s := &*PrimeDivisors(Integers()!f);
+      invCC := WPSMultiply(weights, invCC, s * p);
+      JQQ := WPSMultiply(weights[1..i], JQQ, s * p);
+  end for;
+
+  return true, JQQ, maxe;
+end intrinsic;
+
 function ReconstructCurveGeometricG2(inp, K : Base:=false, UpperBound:=16, G2CC:=false)
 /* Alternative: implement variant of BILV */
 /* TODO: Add check of not being product of elliptic curves */
@@ -298,9 +336,8 @@ function ReconstructCurveGeometricG2(inp, K : Base:=false, UpperBound:=16, G2CC:
 end function;
 
 
-function ReconstructCurveG2(P, K : Base:=false, Dom:=[-5..5], UpperBound:=16, G2CC:=false)
-  // Reconstruct curve from period matrix P, returned over an extension of the
-  // base field K.
+intrinsic ReconstructGenus2Curve(P::., K::Fld : Base:=false, Dom:=[-5..5], UpperBound:=16, G2CC:=false) -> CrvHyp, Map, BoolElt, .
+{ Reconstruct curve from period matrix P, returned over an extension of the base field K.}
 
   CC := BaseRing(Parent(P));
   assert IsBigPeriodMatrix(P);
@@ -406,6 +443,6 @@ function ReconstructCurveG2(P, K : Base:=false, Dom:=[-5..5], UpperBound:=16, G2
   f := PolynomialRing(L)!coeffs;
   Y := HyperellipticCurve(f);
   return Y, hKL, true, _;
-end function;
+end intrinsic;
 
 
