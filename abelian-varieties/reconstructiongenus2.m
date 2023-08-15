@@ -421,6 +421,10 @@ intrinsic ReconstructGenus2Curve(P::., K::Fld : Base:=false, Dom:=[-5..5], Upper
   end if;
   vprint CurveRec : "done.";
 
+  YCC := RiemannSurface(fCC, 2 : Precision := Precision(CC) + 10);
+  Q := ChangeRing(YCC`BigPeriodMatrix, CC) / 2;
+
+
   // The next lines functions as an assertion
   vprint CurveRec, 2 : "Check for isomorphism...";
   /*
