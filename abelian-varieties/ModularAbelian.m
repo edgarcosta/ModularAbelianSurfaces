@@ -253,12 +253,14 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
     C, _, b, e := ReconstructGenus2Curve(Omega, QQ : Base:=true);
     if not b then
       vprint ModAbVarRec : "error in ReconstructGenus2Curve: " cat Sprint(e);
-    else
-      return true, ReducedModel(C), _;
     end if;
   catch er
-    vprint ModAbVarRec : "error in ReconstructGenus2Curve: " cat Sprint(er);
+    b := false;
+    vprint ModAbVarRec : "Exception raised in ReconstructGenus2Curve: " cat Sprint(er);
   end try;
+  if b then
+    return true, ReducedMinimalWeierstrassModel(C), _;
+  end if;
   b, J := IntegralReconstructionIgusaInvariants(Omega);
   require b : "Failed to run IntegralReconstructionIgusaInvariants";
   if J[5] eq 0 then
@@ -278,7 +280,7 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
   vprintf ModAbVarRec: "Possible twisted by %o\n", D;
   if #D eq 1 then
     C := QuadraticTwist(C, D[1]);
-    return true, ReducedModel(C), _;
+    return true, ReducedMinimalWeierstrassModel(C), _;
   else
     return false, J, "The curve is off by more than quadratic twists";
   end if;
