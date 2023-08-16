@@ -83,7 +83,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   { Compute the normalized period matrix associated to f }
   // before we defaulted to this guess with the first 2 replaced by 20
   // clear cache
-  if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt prec + 10 then
+  extra_prec := Ceiling(prec/0.9 + 10); // equality is checked at 90% of the digits
+  if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt extra_prec then
     delete f`PeriodMap;
   end if;
 
@@ -91,9 +92,9 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   vprint ModAbVarRec: Sprintf("%o...", f);
   default_prec := Precision(GetDefaultRealField());
   // this is how we control the precision of the output of Periods
-  SetDefaultRealFieldPrecision(prec + 10);
+  SetDefaultRealFieldPrecision(extra_prec);
 
-  CC := ComplexFieldExtra(prec + 10);
+  CC := ComplexFieldExtra(extra_prec);
   B := Basis(f);
 
   function matrix_helper(ncoeffs)
@@ -109,7 +110,7 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   ncoeffs +:= ncoeffs_inc;
   vtime ModAbVarRec:
   P1 := matrix_helper(ncoeffs);
-  // P0 and P1 live in rings with prec + 10
+  // P0 and P1 live in rings with extra_prec
   // this checks if they agree up to prec
   t, e := AlmostEqualMatrix(P0, P1);
   while not t do
@@ -122,6 +123,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
     t, e := AlmostEqualMatrix(P0, P1);
     assert ncoeffs lt 20*ncoeffs_inc; // sanity
   end while;
+  vprint ModAbVarRec: Sprintf("Final error: %o", ComplexField(8)!e);
+  vprint ModAbVarRec: Sprintf("Final ncoeffs: %o", ncoeffs);
   P1 := ChangeRing(P1, ComplexFieldExtra(prec));
   // undo the default_prec
   SetDefaultRealFieldPrecision(default_prec);
@@ -132,6 +135,8 @@ end intrinsic;
 
 intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false) -> ModMatFldElt, ModMatRngElt
   { Compute the period matrix associated to f A_f^sub or A_f^quo }
+  vprintf ModAbVarRec: "Comuting the lattices...";
+  vtime ModAbVarRec:
   basis, E := Explode(NewformLattices(f)[Quotient select 2 else 1]);
   P := PeriodMappingMatrix(f : prec := prec);
   return P*Matrix(BaseRing(P),  Transpose(basis)), E;
@@ -239,7 +244,7 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
 end intrinsic;
 
 
-intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp, .
+intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
 { Given a period matrix with the standard symplectic polarization we reconstruct a RationalGenus2Curve isomorphic as torus to Omega and isogeneous to it (we use the euler factors fix twists)}
   // First we try ReconstructGenus2Curve
   // if that fails we try to reconstruct from IgusaInvariants
@@ -250,23 +255,26 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
     if not b then
       vprint ModAbVarRec : "error in ReconstructGenus2Curve: " cat Sprint(e);
     else
-      return b, C, _;
+      return true, ReducedModel(C), _;
     end if;
   catch er
     vprint ModAbVarRec : "error in ReconstructGenus2Curve: " cat Sprint(er);
   end try;
   b, J := IntegralReconstructionIgusaInvariants(Omega);
+  if J[5] eq 0 then
+    ModularTojEquation
+  end if;
   C := HyperellipticCurveFromIgusaInvariants(J);
   if Type(BaseRing(C)) ne FldRat then
-    return false, C, "no curve with given Igusa invariants defined over QQ";
+    return false, J, "no curve with given Igusa invariants defined over QQ";
   end if;
   D := PossibleQuadraticTwists(C, f);
   vprintf ModAbVarRec: "Possible twisted by %o\n", D;
   if #D eq 1 then
     C := QuadraticTwist(C, D[1]);
-    return true, C, _;
+    return true, ReducedModel(C), _;
   else
-    return false, C, "The curve is off by more than quadratic twists";
+    return false, J, "The curve is off by more than quadratic twists";
   end if;
 end intrinsic;
 
