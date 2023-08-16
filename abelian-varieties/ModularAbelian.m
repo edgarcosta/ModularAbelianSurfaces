@@ -302,7 +302,7 @@ intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt
   end for;
   // no curves were found
   if #res eq 0 then
-    return true, [], [];
+    return true, [], [], _;
   else
     for r in res do
       if "twists" in r[3] then
