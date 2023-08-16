@@ -262,7 +262,8 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
   end try;
   b, J := IntegralReconstructionIgusaInvariants(Omega);
   if J[5] eq 0 then
-    ModularTojEquation
+    1 + 1;
+    //ModularTojEquation
   end if;
   C := HyperellipticCurveFromIgusaInvariants(J);
   if Type(BaseRing(C)) ne FldRat then
