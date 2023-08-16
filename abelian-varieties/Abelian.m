@@ -116,7 +116,7 @@ intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> 
 
 }
     n := #B;
-    require n eq 2: "Only implemented for combinations of two polarizations, as we rely on computing integral points on a conic in A^2";
+    require n eq 2: Sprintf("Expected #B = 2, got #B = %o. We have only implemented for combinations of two polarizations, as we rely on computing integral points on a conic in A^2", n);
     pf, minors := PfaffianAndMinors(B, Omega);
     CC := BaseRing(Parent(minors[1]));
     // extract conic

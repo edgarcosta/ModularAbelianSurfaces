@@ -244,11 +244,10 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
 end intrinsic;
 
 
-intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
+intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp, .
 { Given a period matrix with the standard symplectic polarization we reconstruct a RationalGenus2Curve isomorphic as torus to Omega and isogeneous to it (we use the euler factors fix twists)}
   // First we try ReconstructGenus2Curve
   // if that fails we try to reconstruct from IgusaInvariants
-  b := false;
   QQ := RationalsExtra(Precision(BaseRing(Omega)));
   try
     C, _, b, e := ReconstructGenus2Curve(Omega, QQ : Base:=true);
@@ -261,9 +260,15 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
     vprint ModAbVarRec : "error in ReconstructGenus2Curve: " cat Sprint(er);
   end try;
   b, J := IntegralReconstructionIgusaInvariants(Omega);
+  require b : "Failed to run IntegralReconstructionIgusaInvariants";
   if J[5] eq 0 then
-    1 + 1;
-    //ModularTojEquation
+    jCC := ModularTojEquation(IgusaModularInvariants(Omega));
+    // now we reconstruct jCC as rational numbers
+    b0, a0 := RationalReconstruction(jCC[1]);
+    require b0 : Sprintf("Failed to RationalReconstruction %m", jCC[1]);
+    b1, a1 := RationalReconstruction(jCC[2]);
+    require b1 : Sprintf("Failed to RationalReconstruction %m", jCC[2]);
+    return true, [a0, a1, 1], _;
   end if;
   C := HyperellipticCurveFromIgusaInvariants(J);
   if Type(BaseRing(C)) ne FldRat then
@@ -279,42 +284,37 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
   end if;
 end intrinsic;
 
-intrinsic RationalGenus2CurvesFromPolarization(Omega::ModMatFldElt, E::AlgMatElt, f::ModSym : Saturate:=true) -> List
-  {From a period matrix Omega and a pairing E, return curves associated to the abelian variety
-  and the abelian variety with the maximal endomorphism order (if Saturate)}
-  vprint ModAbVarRec: "RationalGenus2CurvesFromPolarization...";
-  function Auxiliar(Omega, E : R := 1)
-      PPs := RationalPrincipalPolarizations(Omega, E);
-      QQ := RationalsExtra(Precision(BaseRing(Omega)));
-      res := [* *];
-      vprintf ModAbVarRec: "#PPSs = %o\n", #PPs;
-      for pp in PPs do
-          newOmega, F := Explode(pp); // newOmega == Omega * F
-          b, C, e := RationalGenus2Curve(newOmega, f);
-          if b then
-              Append(~res, <R*F, C>);
-          else
-              Append(~res, <R*F, C, e>);
-          end if;
-      end for;
-      return res;
-  end function;
-  res := Auxiliar(Omega, E);
-  if not Saturate then
-      return res;
-  end if;
-  Omega_max, E_max, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
-  if R eq 1 then
-      res_max := res;
+intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt, f::ModSym) -> BoolElt, AlgMatElt, CrvHyp, .
+{ From a period matrix Omega and a pairing E associated to f, return a boolean, an isomorphsim and Curve/Igusa invariants/j-invariants assobiated to one ot the principal polarizations }
+  PPs := RationalPrincipalPolarizations(Omega, E);
+  QQ := RationalsExtra(Precision(BaseRing(Omega)));
+  vprintf ModAbVarRec: "#PPSs = %o\n", #PPs;
+  res := [* *];
+  for i->pp in PPs do
+    vprintf ModAbVarRec: "Trying polarization = %o\n", i;
+      newOmega, F := Explode(pp); // newOmega == Omega * F
+      b, C, e := RationalGenus2Curve(newOmega, f);
+      if b then
+        return b, F, C, _;
+      else
+          Append(~res, <F, C, e>);
+      end if;
+  end for;
+  // no curves were found
+  if #res eq 0 then
+    return true, [], [];
   else
-      res_max := Auxiliar(Omega_max, E_max : R := R);
+    for r in res do
+      if "twists" in r[3] then
+        return false, r[1], r[2], r[3];
+      end if;
+    end for;
+    // no twist has been mentioned
+    return false, r[1], r[2], r[3] where r := res[1];
   end if;
-  if NarrowClassNumber(EndQQ) eq 1 then
-      assert #res_max ge 1; // maybe we should just check that #RationalPrincipalPolarizations > 1
-  end if;
-  vprint ModAbVarRec: "RationalGenus2CurvesFromPolarization done";
-  return [* R eq 1, res, res_max *];
 end intrinsic;
+
+
 
 intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
 {Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}

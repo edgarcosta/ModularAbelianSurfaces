@@ -14,24 +14,44 @@ end if;
 function Core(label, prec);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
-  Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
-  CC := BaseRing(Omega);
   euler_factors := function(p)
     return Reverse(CharpolyOfFrobenius(f, p));
   end function;
-  res_sub := RationalGenus2CurvesFromPolarization(Omega, E, f);
+  _ := NewformLattices(f);
   Hquo_in_Hsub := Transpose(f`integral_homology_subquo[3]);
-  Omega_quo, E_quo := PeriodMatrix(f : prec:=prec, Quotient:=true);
-  res_quo := RationalGenus2CurvesFromPolarization(Omega_quo, E_quo, f);
-  res_quo_from_sub := [* res_quo[1], [* <Hquo_in_Hsub*elt[1], elt[2]> : elt in res_quo[2] *], [* <Hquo_in_Hsub*elt[1], elt[2]> : elt in res_quo[3] *] *];
-  return res_sub, res_quo_from_sub;
+  res := [* *];
+  for quosat in CartesianPower([false,true], 2) do
+    quotient, saturate := Explode(quosat);
+    Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
+    if saturate then
+      Omega, E, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
+    else
+      R := 1;
+    end if;
+    if quotient then
+      R := Hquo_in_Hsub*R;
+    end if;
+    // F, C can be zero if no PPs
+    b, F, C, e := RationalGenus2CurvesWithPolarization(Omega, E, f);
+    isogeny_from_sub := R*F;
+
+    if saturate and NarrowClassNumber(EndQQ) eq 1 then
+      assert C cmpne 0;
+    end if;
+    if b then
+      // we found a curve, we go home early
+      return b, <isogeny_from_sub, C>;
+    end if;
+    Append(~res, <quosat, F, C, e>);
+  end for;
+  return false, res;
 end function;
 if assigned debug then
   SetDebugOnError(true);
-  res_sub, res_quo_from_sub := Core(label, prec);
+  b, res := Core(label, prec);
 else
 try
-  res_sub, res_quo_from_sub := Core(label, prec);
+  b, res := Core(label, prec);
 catch e
   WriteStderr(e);
   print Join([label, "FAILED", Join(Split(Join(Split(Sprint(e), "\n"),"\\n"), "  "), " ")], ":");
@@ -39,14 +59,18 @@ catch e
 end try;
 end if;
 
-function TupleIsogCurve(elt)
-    coeffs := elt[2] cmpeq false select [] else Eltseq(elt[2]);
-    return <Eltseq(elt[1]), coeffs>;
-end function;
-function MachinePrintRes(res)
-    return [Sprint(res[1]), Sprint([TupleIsogCurve(elt) : elt in res[2]]), Sprint([TupleIsogCurve(elt) : elt in res[3]])];
+
+
+function WriteOutput(elt)
+  if Type(elt) eq Tup then
+    r := Join([label] cat [Sprint(Eltseq(x)) : x in elt], ":");
+  else
+    r := Join([label, "NOTFOUND"] cat Sprint(elt));
+  end if;
+  return StripWhiteSpace(r);
 end function;
 
-print StripWhiteSpace(Join([label] cat MachinePrintRes(res_sub) cat MachinePrintRes(res_quo_from_sub), ":"));
-
+print WriteOutput(res);
 exit 0;
+
+

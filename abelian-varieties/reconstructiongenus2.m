@@ -41,6 +41,19 @@ intrinsic ModularToIgusaInvariants(H::SeqEnum) -> SeqEnum
   return WPSNormalize([2,4,6,8,10], [J2, J4, J6, J8, J10]);
 end intrinsic;
 
+intrinsic ModularTojEquation(H::SeqEnum) -> SeqEnum
+  { the j-invariants satisfy the coefficients of the quadratic equation}
+  // See Igusa -- Siegel modular forms of genus two page 181
+  h4, h6, h10, h12 := Explode(H);
+  y1 := 2^11*3*h4^3/h12; // = j1 j2
+  y2 := 2^13*3*h6^2/h12; // = (j1 - 1728) (j2 - 1728)
+  // => y2 = y1 - 1728 (j1 + j2) + 1728^2
+  // <=> 1728 (j1 + j2) = 1728^2 + y1 - y2
+  // (T - j1)(T - j2) = T^2 -(2985984 + y1 - y2)/1728 T + y1
+  //  = Polynomial( [y1, -(2985984 + y1 - y2)/1728, 1] )
+  return [y1, -(2985984 + y1 - y2)/1728, 1];
+end intrinsic;
+
 
 
 
@@ -127,7 +140,25 @@ function ReconstructCurveG2CC(inp)
 end function;
 
 
-function ModularInvariantsG2(inp : Reduce:=true)
+intrinsic IgusaModularInvariants(inp : Reduce:=true) -> SeqEnum, SeqEnum
+  { given a big/small period matrix computes (h_4, h_6, h_10, h_12) at the input matrix }
+  /*
+    We call the following vector of invariants the Igusa modular invariants:
+    psi4 = I4/4
+    psi6 = I6prime/4 (Streng's notation) = ((I2*I4-3*I6)/2)/4
+    chi10 = -I10/2^12
+    chi12 = I12/2^15
+
+    They correspond to the Siegel modular forms with the following
+    normalized q-expansions:
+    psi4 = 1 + 240(q1+q2) + ...
+    psi6 = 1 - 504(q1+q1) + ...
+    chi10 = (q3 - 2 + q3^-1) + ...
+    chi12 = (q3 + 10 + q3^-1) + ...
+
+    This normalization differs slightly from Igusa's, who divides
+    further chi10 and chi12 by 4 and 12, respectively.
+  */
   CC := BaseRing(Parent(inp));
   g := Nrows(inp);
   assert g eq 2;
@@ -173,9 +204,9 @@ function ModularInvariantsG2(inp : Reduce:=true)
     error "Not small enough", ComplexField(5)!m^2,  ComplexField(5)!(Abs(i6[1] -i6[2])/m)^2;
   end if;
 
-
-  return WPSNormalizeCC([4, 6, 10, 12], [h4, h6, h10, h12]);
-end function;
+  w := [4, 6, 10, 12];
+  return WPSNormalizeCC(w, [h4, h6, h10, h12]), w;
+end intrinsic;
 
 
 
@@ -217,7 +248,7 @@ function AlgebraizedInvariantsG2(inp, K : Base:=false, UpperBound:=16, G2CC:=fal
     // if we already did the work with Theta derivatives
     vtime CurveRec: invCC := IgusaInvariantsG2(tau : G2CC:=G2CC, Reduce:=false);
   elif type eq "Modular" then
-    vtime CurveRec: invCC := ModularInvariantsG2(tau : Reduce:=false);
+    vtime CurveRec: invCC := IgusaModularInvariants(tau : Reduce:=false);
   elif type eq "j" then
     vprintf CurveRec : "Computing Igusa invariants over CC...";
     vtime CurveRec: _, _, _, _, J10 := Explode(IgusaInvariantsG2(tau : G2CC:=G2CC, Reduce:=false));
