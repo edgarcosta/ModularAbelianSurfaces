@@ -65,7 +65,7 @@ function WriteOutput(elt)
   if Type(elt) eq Tup then
     r := Join([label] cat [Sprint(Eltseq(x)) : x in elt], ":");
   else
-    r := Join([label, "NOTFOUND"] cat Sprint(elt));
+    r := Join([label, "NOTFOUND", Sprint(elt)], ":");
   end if;
   return StripWhiteSpace(r);
 end function;
