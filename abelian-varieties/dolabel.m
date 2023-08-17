@@ -10,8 +10,11 @@ if assigned verbose then
   SetVerbose("ModAbVarRec", verbose);
   SetVerbose("CurveRec", verbose);
 end if;
+if assigned debug then
+  SetDebugOnError(true);
+end if;
 
-function Core(label, prec);
+function Core(label, prec : debug := false);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
   euler_factors := function(p)
@@ -24,7 +27,17 @@ function Core(label, prec);
     quotient, saturate := Explode(quosat);
     Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
     if saturate then
-      Omega, E, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
+      if debug then
+        Omega, E, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
+      else
+        try
+          Omega, E, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
+        catch er
+          WriteStderr(er);
+          Append(~res, <quosat, 0, 0, Sprint(er)>);
+          continue;
+        end try;
+      end if;
     else
       R := 1;
     end if;
@@ -32,7 +45,17 @@ function Core(label, prec);
       R := Hquo_in_Hsub*R;
     end if;
     // F, C can be zero if no PPs
-    b, F, C, e := RationalGenus2CurvesWithPolarization(Omega, E, f);
+    if debug then
+      b, F, C, e := RationalGenus2CurvesWithPolarization(Omega, E, f);
+    else
+      try
+        b, F, C, e := RationalGenus2CurvesWithPolarization(Omega, E, f);
+      catch er
+        WriteStderr(er);
+        Append(~res, <quosat, 0, 0, Sprint(er)>);
+        continue;
+      end try;
+    end if;
     isogeny_from_sub := R*F;
 
     if saturate and NarrowClassNumber(EndQQ) eq 1 then
@@ -46,18 +69,7 @@ function Core(label, prec);
   end for;
   return false, res;
 end function;
-if assigned debug then
-  SetDebugOnError(true);
-  b, res := Core(label, prec);
-else
-try
-  b, res := Core(label, prec);
-catch e
-  WriteStderr(e);
-  print Join([label, "FAILED", Join(Split(Join(Split(Sprint(e), "\n"),"\\n"), "  "), " ")], ":");
-  exit 1;
-end try;
-end if;
+b, res := Core(label, prec : debug:= assigned debug);
 
 
 

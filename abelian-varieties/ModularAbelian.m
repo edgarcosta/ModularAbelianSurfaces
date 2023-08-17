@@ -128,7 +128,7 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   P1 := ChangeRing(P1, ComplexFieldExtra(prec));
   // undo the default_prec
   SetDefaultRealFieldPrecision(default_prec);
-  vprint ModAbVarRec: "Done";
+  vprint ModAbVarRec: "Done with PeriodMappingMatrix";
   return Transpose(P1), ncoeffs, e;
 end intrinsic;
 
@@ -188,7 +188,7 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
   GeoEndoRepBase := EndomorphismRepresentation(GeoEndoRep, F, h);
   vprint ModAbVarRec:GeoEndoRep;
   vprint ModAbVarRec:GeoEndoRepBase;
-  vprint ModAbVarRec: "Done";
+  vprint ModAbVarRec: "Done computing GeometricEndomorphismRepresentation";
   require #GeoEndoRepBase eq 2: Sprintf("This does not seem to be GL2-type, dim End A = %o", #GeoEndoRepBase);
   one := GeoEndoRepBase[1][2];
   gen := GeoEndoRepBase[2][2];
@@ -229,34 +229,38 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
   vprint ModAbVarRec: "Computing GeometricEndomorphismRepresentation...";
   vtime ModAbVarRec:
   GeoEndoRep2 := GeometricEndomorphismRepresentation(P2, QQ);
-  vprint ModAbVarRec: "Done";
+  vprint ModAbVarRec: "Done computing GeometricEndomorphismRepresentation";
   require #GeoEndoRep2 ge 2: Sprintf("This does not seem to be GL2-type, dim End newA_bar = %o", #GeoEndoRep2);
   F, h := InclusionOfBaseExtra(BaseRing(GeoEndoRep2[1][1]));
   GeoEndoRepBase2 := EndomorphismRepresentation(GeoEndoRep2, F, h);
-  vprint ModAbVarRec:GeoEndoRep2;
-  vprint ModAbVarRec:GeoEndoRepBase2;
+  vprint ModAbVarRec: GeoEndoRep2;
+  vprint ModAbVarRec: GeoEndoRepBase2;
   require #GeoEndoRepBase2 ge 2: Sprintf("This does not seem to be GL2-type, dim End newA = %o", #GeoEndoRepBase2);
   minpoly2 := MinimalPolynomial(GeoEndoRepBase2[2][1]);
   K2<a> := NumberField(minpoly2);
   require IsMaximal(EquationOrder(K2)) : "something went wrong, we didn't get the maximal order...";
-  vprint ModAbVarRec: "Done";
+  vprint ModAbVarRec: "Done computing GeometricEndomorphismRepresentation";
   return P2, E2, R, GeoEndoRepBase2, EquationOrder(K2);
 end intrinsic;
 
 
 intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp, .
 { Given a period matrix with the standard symplectic polarization we reconstruct a RationalGenus2Curve isomorphic as torus to Omega and isogeneous to it (we use the euler factors fix twists)}
+  vprint ModAbVarRec : "RationalGenus2Curve...";
   // First we try ReconstructGenus2Curve
   // if that fails we try to reconstruct from IgusaInvariants
   QQ := RationalsExtra(Precision(BaseRing(Omega)));
   try
+    vprint ModAbVarRec : "RationalGenus2Curve calling ReconstructGenus2Curve...";
     C, _, b, e := ReconstructGenus2Curve(Omega, QQ : Base:=true);
+    vprint ModAbVarRec : "done calling ReconstructGenus2Curve";
     if not b then
       vprint ModAbVarRec : "error in ReconstructGenus2Curve: " cat Sprint(e);
     end if;
   catch er
+    vprint ModAbVarRec : "Exception raised in ReconstructGenus2Curve";
     b := false;
-    vprint ModAbVarRec : "Exception raised in ReconstructGenus2Curve: " cat Sprint(er);
+    vprint ModAbVarRec : Sprint("Exception raised in ReconstructGenus2Curve: %o", er);
   end try;
   if b then
     return true, ReducedMinimalWeierstrassModel(C), _;
@@ -288,6 +292,7 @@ end intrinsic;
 
 intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt, f::ModSym) -> BoolElt, AlgMatElt, CrvHyp, .
 { From a period matrix Omega and a pairing E associated to f, return a boolean, an isomorphsim and Curve/Igusa invariants/j-invariants assobiated to one ot the principal polarizations }
+  vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization...";
   PPs := RationalPrincipalPolarizations(Omega, E);
   QQ := RationalsExtra(Precision(BaseRing(Omega)));
   vprintf ModAbVarRec: "#PPSs = %o\n", #PPs;
@@ -297,11 +302,13 @@ intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt
       newOmega, F := Explode(pp); // newOmega == Omega * F
       b, C, e := RationalGenus2Curve(newOmega, f);
       if b then
+        vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization: found curve!";
         return b, F, C, _;
       else
           Append(~res, <F, C, e>);
       end if;
   end for;
+  vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization: sorting results";
   // no curves were found
   if #res eq 0 then
     return true, [], [], _;
@@ -615,10 +622,10 @@ intrinsic PossibleQuadraticTwists(C::CrvHyp, euler_factors::UserProgram, BadPrim
   vprint ModAbVarRec: Vector(GF(2), twistdata);
   k := Nrows(M);
   solutions := [Eltseq(elt)[1..k] : elt in Kernel(VerticalJoin(M, Matrix(v))) | elt[k + 1] eq 1];
+  vprint ModAbVarRec: "PossibleQuadraticTwists: Done";
   return [#r gt 0 select &*r else 1
           where r := [badprimes[i]: i->e in sol | not IsZero(e)]
     : sol in solutions];
-  vprint ModAbVarRec: "Done";
 end intrinsic;
 
 
