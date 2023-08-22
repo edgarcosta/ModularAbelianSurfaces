@@ -6,7 +6,11 @@ label := s[1];
 prec := StringToInteger(prec);
 
 if assigned verbose then
-  verbose := StringToInteger(verbose);
+  try
+    verbose := StringToInteger(verbose);
+  catch e
+    verbose := 1;
+  end try;
   SetVerbose("ModAbVarRec", verbose);
   SetVerbose("CurveRec", verbose);
 end if;
