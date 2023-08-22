@@ -332,6 +332,8 @@ intrinsic IntegralReconstructionIgusaInvariants(inp : G2CC:=false, Reduce:=true)
       JCC := WPSMultiply(weights, JCC, s * p);
       JQQ := WPSMultiply(weights[1..i], JQQ, s * p);
   end for;
+  J2, J4, J6, J8, J10 := Explode(JQQ);
+  require 4*J8 eq J2*J6 - J4^2: Sprintf("%o = 4*J8 != J2*J6 - J4^2 = %o, where J := %o", 4*J8, J2*J6 - J4^2, JQQ);
 
   vprintf CurveRec : "IntegralReconstructionIgusaInvariants... done";
   return true, JQQ, maxe;
