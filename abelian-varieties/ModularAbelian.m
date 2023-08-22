@@ -114,6 +114,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   // this checks if they agree up to prec
   t, e := AlmostEqualMatrix(P0, P1);
   while not t do
+    // FIXME: we could do this much better
+    // we could check that the errors are getting smaller and we could even estimate how much we should increase the number of coefficients
     vprint ModAbVarRec: Sprintf("Current error: %o", ComplexField(8)!e);
     P0 := P1;
     ncoeffs +:= ncoeffs_inc;
@@ -121,7 +123,7 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
     vtime ModAbVarRec:
     P1 := matrix_helper(ncoeffs);
     t, e := AlmostEqualMatrix(P0, P1);
-    assert ncoeffs lt 20*ncoeffs_inc; // sanity
+    assert ncoeffs lt 50*ncoeffs_inc; // sanity check that we are converging
   end while;
   vprint ModAbVarRec: Sprintf("Final error: %o", ComplexField(8)!e);
   vprint ModAbVarRec: Sprintf("Final ncoeffs: %o", ncoeffs);
