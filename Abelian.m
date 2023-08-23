@@ -1,10 +1,3 @@
-
-intrinsic Imaginary(M::Mtrx[FldCom]) -> Mtrx[FldRe]
-{ The imaginary part of M }
-    return Matrix([[Imaginary(elt) : elt in Eltseq(row)] : row in Rows(M)]);
-end intrinsic;
-
-
 intrinsic DualLattice(Omega::ModMatFldElt) -> ModMatFldElt
 {
     Input: Omega, g by 2g complex matrix, representing a complex torus A
@@ -69,6 +62,7 @@ intrinsic RationalSelfDualHomomorphisms(Omega::ModMatFldElt, E::AlgMatElt) -> Se
 end intrinsic;
 
 
+/*
 // To show up at some point in Endomorpisms package
 intrinsic AdjugateMatrix(M::Mtrx) -> Mtrx
 {
@@ -76,6 +70,7 @@ intrinsic AdjugateMatrix(M::Mtrx) -> Mtrx
 }
     return Matrix(BaseRing(M), [[Cofactor(M, j, i) : j in [1..Ncols(M)]] : i in [1..Nrows(M)]]);
 end intrinsic;
+*/
 
 // To show up at some point in Endomorpisms package
 intrinsic PrincipalMinors(M::Mtrx) -> SeqEnum[FldElt]
@@ -97,7 +92,8 @@ function PfaffianAndMinors(Es, P)
     pf := Pfaffian(ER);
     PRCC := ChangeRing(P, RCC);
     PRCC_star := ChangeRing(Conjugate(Transpose(P)), RCC);
-    ERCC_inverse := ChangeRing(AdjugateMatrix(ER), RCC);
+    // ERCC_inverse := ChangeRing(AdjugateMatrix(ER), RCC);
+    ERCC_inverse := ChangeRing(Adjoint(ER), RCC);
     M := I*PRCC*ERCC_inverse*PRCC_star;
     minors := PrincipalMinors(M);
 
