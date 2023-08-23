@@ -21,9 +21,6 @@ end if;
 function Core(label, prec : debug := false);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
-  euler_factors := function(p)
-    return Reverse(CharpolyOfFrobenius(f, p));
-  end function;
   _ := NewformLattices(f);
   Hquo_in_Hsub := Transpose(f`integral_homology_subquo[3]);
   res := [* *];
