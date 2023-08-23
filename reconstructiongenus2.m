@@ -1,7 +1,10 @@
 /***
  *  Reconstruction algorithms
  *
- *  Written by Jeroen Sijsling (jeroen.sijsling@uni-ulm.de)
+ *  Originally written by Jeroen Sijsling (jeroen.sijsling@uni-ulm.de)
+ *  and available at
+ *    https://github.com/JRSijsling/curve_reconstruction/blob/master/magma/reconstruction.m
+ *  we hope to incorporate changes in the near future.
  *
  *  See LICENSE.txt for license details.
  */
