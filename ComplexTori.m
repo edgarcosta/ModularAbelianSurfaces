@@ -62,6 +62,58 @@ intrinsic RationalSelfDualHomomorphisms(Omega::ModMatFldElt, E::AlgMatElt) -> Se
 end intrinsic;
 
 
+intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false) -> SeqEnum
+    {}
+    function find_primitive_eigenvalue(f)
+  for n->an in Eltseq(PowerSeries(f, HeckeBound(f))) do
+    if IsPrimitive(an) then
+      return <n, an>;
+    end if;
+  end for;
+  assert false;
+end function;
+function IntegralHeckeOperator(f, n : Quotient:=false)
+  S := Matrix(Rationals(), NewformLattices(f)[Quotient select 2 else 1][1]);
+  Tn := HeckeOperator(f, n);
+  return Matrix(Integers(),Transpose(S*Tn*S^-1));
+end function;
+function HeckeActionOnIntegralHomology(f : Quotient:=false)
+  OH, HtoOH := HeckeEigenvalueRing(f);
+  n, an := Explode(find_primitive_eigenvalue(f));
+  Tn := IntegralHeckeOperator(f, n : Quotient:=Quotient);
+  // this is a primitive element for the field, but perhaps not for the ring, see for example 94.2.a.b where a3 = 2sqrt(2)
+  assert Degree(OH) eq 2; // we could also check for the order to be monogenic for higher degree, but further changes are needed below
+  // an = a + b*OH.2
+  a, b := Explode(ChangeUniverse(Eltseq(HtoOH(an)), Integers()));
+  assert (HtoOH(an) - a) div b eq OH.2;
+  assert &and[elt mod b eq 0 : elt in Eltseq(Tn - a)];
+  R := (Tn - a) div b;
+  Rs := [IdentityMatrix(Integers(), Nrows(R)), R];
+  return Rs;
+end function;
+ function SkewSymmetricHomomorphisms(Rs)
+    if #Rs eq 0 then
+        return Rs;
+    end if;
+    M := Matrix(Integers(), [Eltseq(Ri + Transpose(Ri)) : Ri in Rs]);
+    rows := Rows(KernelMatrix(M));
+    return [  &+[row[i]*Rs[i] : i->_ in Rs]  : row in rows ];
+end function;
+
+    // FIXME cache this
+    Rs := HeckeActionOnIntegralHomology(f);
+    E := NewformLattices(f)[Quotient select 2 else 1,2];
+    g := Nrows(E) div 2;
+    //maps Omega to Omega dual are just E composed with endomorphisms, then saturated
+    ERs := [E*elt : elt in Rs];
+    // now we saturate
+    M := Matrix([Eltseq(elt) : elt in ERs]);
+    sM := Saturation(M); // Submatrix(Q^-1, 1, 1, 2, Ncols(M)) where _, _, Q := SmithForm(M); // P*M*Q = S 
+    sERs := [Matrix(Integers(), 2*g, 2*g, Eltseq(elt)) : elt in Rows(sM)];
+    skewZZ := SkewSymmetricHomomorphisms(sERs);
+    return LLL(skewZZ); // improve it by applying LLL
+end intrinsic;
+
 /*
 // To show up at some point in Endomorpisms package
 intrinsic AdjugateMatrix(M::Mtrx) -> Mtrx
@@ -129,11 +181,24 @@ intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> 
 end intrinsic;
 
 
-intrinsic RationalPrincipalPolarizations(Omega, E) -> SeqEnum
+intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::Mtrx ) -> SeqEnum
 {
     Returns all rational principal polarizations for Omega with the pairing E, together with the change of basis.
 }
     self_dual_homomorphisms := [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)];
+    PPs := PrincipalPolarizations(Omega, self_dual_homomorphisms);
+    PPs := [Matrix(Integers(), elt) : elt in PPs];
+    CC := BaseRing(Omega);
+    return [<Omega*Transpose(Matrix(CC, F)), Transpose(F)> where _, F := FrobeniusFormAlternating(elt) : elt in PPs];
+end intrinsic;
+
+intrinsic RationalPrincipalPolarizations(f::ModSym : Quotient:=false ) -> SeqEnum
+{
+    Returns all rational principal polarizations for Omega with the pairing E, together with the change of basis.
+}
+    Omega, E := PeriodMatrix(f : Quotient:=Quotient);
+    self_dual_homomorphisms := RationalSelfDualHomomorphisms(f : Quotient:=Quotient);
+
     PPs := PrincipalPolarizations(Omega, self_dual_homomorphisms);
     PPs := [Matrix(Integers(), elt) : elt in PPs];
     CC := BaseRing(Omega);
