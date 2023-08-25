@@ -1,20 +1,23 @@
 // Improving the computation of the integral homology for the sub/quo modular abelian varieties
 // instead of calling IntegralHomology in Geometry/ModAbVar/homology.m
 
+import "ComplexTori.m" : SkewSymmetricHomomorphismsRepresentation;
+
 declare attributes ModSym:
-  integral_homology_subquo, // SeqEnum[Tup]
-  isogeny_quo_in_sub,
-  hecke_ring_subquo;
+  integral_homology_subquo, // SeqEnum[Tup<AlgMatElt, AlgMatElt>]
+  homology_quo_in_sub,
+  hecke_ring_subquo, // SeqEnum[SeqEnum[AlgMatElt]]
+  maxend_subquo; // SeqEnum[Tup<AlgMatElt,SeqEnum[AlgMatElt]>] the second entry is the hecke ring
 
 intrinsic IsogenySubToQuo(f) -> AlgMAtElt
 { The isogeny between subvariety and the quotient varieties of J_0(N) associated to f, i.e., how to write the (integral homology) basis for the quotient in terms of the basis for the subvariety}
   if not assigned f`integral_homology_subquo then
     _ := IntegralHomology(f);
   end if;
-  return f`integral_homology_subquo[3];
+  return f`homology_quo_in_sub;
 end intrinsic;
 
-intrinsic IntegralHomology(f::ModSym : Quotient:=false) -> AlgMatElt, AlgMatElt
+intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt, AlgMatElt
 { Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
   if not assigned f`integral_homology_subquo then
     A := AmbientSpace(f);
@@ -62,8 +65,7 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false) -> AlgMatElt, AlgMatElt
     end while;
     Hsub := KernelMatrix(H);//this is supposed to be H[If], and If = (hp)_p, dim 4
     //If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
-    // FIXME: replace unused with _ when bug in SmithForm is fixed
-    D, unused, Q := SmithForm(V);
+    D, _, Q := SmithForm(V);
     if Nrows(D) gt 0 then
       assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
     end if;
@@ -79,6 +81,7 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false) -> AlgMatElt, AlgMatElt
 
     //we now invert Hsub_in_Hquo not caring about rescaling
     Hquo_in_Hsub := Matrix(Rationals(), Hsub_in_Hquo)^-1;
+
     //Denominator(Hquo_in_Hsub);
     Hquo_in_Hsub *:= Denominator(Hquo_in_Hsub);
     Hquo_in_Hsub := Matrix(Integers(), Hquo_in_Hsub);
@@ -95,9 +98,16 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false) -> AlgMatElt, AlgMatElt
     Esub, Equo := Explode([Matrix(Integers(), A*Denominator(A)) where A := S*Ef*Transpose(S) where S:=Matrix(Rationals(), elt) : elt in [Hsub_in_Bf, Hquo_in_Bf]]);
     // Esub div:= GCD(Eltseq(Esub)); //???
     // Equo div:= GCD(Eltseq(Equo));
-    f`integral_homology_subquo := [* <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo>, Hquo_in_Hsub *];
+    f`integral_homology_subquo := [ <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo> ];
+    f`homology_quo_in_sub := Hquo_in_Hsub;
   end if;
-  return Explode(f`integral_homology_subquo[Quotient select 2 else 1]);
+  basis_in_Bf, Einbasis := Explode(f`integral_homology_subquo[Quotient select 2 else 1]);
+  if MaximalEnd then
+    Rtomax := IsogenyToMaximalEndomomorphism(f : Quotient:=Quotient);
+    basis_in_Bf := Rtomax*basis_in_Bf;
+    Einbasis := Rtomax*Einbasis*Transpose(Rtomax);
+  end if;
+  return basis_in_Bf, Einbasis;
 end intrinsic;
 
 
@@ -119,14 +129,14 @@ intrinsic PrimitiveHeckeOperator(f) -> RngIntElt, FldNumElt
   assert false;
 end intrinsic;
 
-intrinsic HeckeRing(f : Quotient:=false) -> SeqEnum[AlgMatElt]
+intrinsic HeckeRing(f : Quotient:=false, MaximalEnd:=false) -> SeqEnum[AlgMatElt]
 { A sequence of marices that form Z-basis for the Hecke ring associated to A_f ^quo/sub }
   if not assigned f`hecke_ring_subquo then
     OH, HtoOH := HeckeEigenvalueRing(f);
     n, an := PrimitiveHeckeOperator(f);
     Tns := [IntegralHeckeOperator(f, n : Quotient:=q) : q in [false, true]];
     // this is a primitive element for the field, but perhaps not for the ring, see for example 94.2.a.b where a3 = 2sqrt(2)
-    assert Degree(OH) eq 2; // we could also check for the order to be monogenic for higher degree, but further changes are needed below
+    require Degree(OH) eq 2: "At the moment only implemented for dimension 2"; // we could also check for the order to be monogenic for higher degree, but further changes are needed below
     // an = a + b*OH.2
     a, b := Explode(ChangeUniverse(Eltseq(HtoOH(an)), Integers()));
     assert (HtoOH(an) - a) div b eq OH.2;
@@ -134,10 +144,73 @@ intrinsic HeckeRing(f : Quotient:=false) -> SeqEnum[AlgMatElt]
     Rs := [(Tn - a) div b : Tn in Tns];
     f`hecke_ring_subquo := [[IdentityMatrix(Integers(), Nrows(R)), R] : R in Rs];
   end if;
-  return f`hecke_ring_subquo[Quotient select 2 else 1];
+  if not MaximalEnd then
+    return f`hecke_ring_subquo[Quotient select 2 else 1];
+  else
+    _, H := IsogenyToMaximalEndomomorphism(f : Quotient:=Quotient);
+    return H;
+  end if;
 end intrinsic;
 
-import "ComplexTori.m" : SkewSymmetricHomomorphismsRepresentation;
+//TODO is this a functor?
+intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqEnum[AlgMatElt]
+{
+  Retun the isogeny A -> A_max where End(A_max) := MaximalOrder(End(A) = HeckeRing(A) ) and A is the subvariety (or quotient) of J_0(N) associated to f, and the HeckeRing
+}
+  if not assigned f`saturation_subquo then
+    OH := HeckeEigenvalueRing(f);
+    require Degree(OH) eq 2 : "Only implemented for the case that the hecke ring has dimension two";
+    g := 2;
+    Hs := [HeckeRing(f : Quotient:=q) : q in [false, true]];
+    if IsMaximal(OH) then
+      f`saturation_subquo := [ <IdentityMatrix(Integers(), 2*g), elt> : elt in Hs];
+    else
+      gens := [elt[2] : elt in Hs];
+      minpoly := MinimalPolynomial(gens[1]); // gens have the same minimal polynomial
+      K<a> := NumberField(minpoly);
+
+
+      // Now we compute the isogeny R, such that P*R is an abelian variety with maximal order
+      D:= Discriminant(Integers(K));
+      x := Parent(minpoly).1;
+      sqrtDpoly := x^2 - D;
+      rts := Roots(sqrtDpoly, K);
+      rt := rts[1][1];
+      f`saturation_subquo := [];
+      for gen in gens do // now we handle the subvariety/quotient independently
+        sqrtD := &+[c*gen^(i-1) : i->c in Eltseq(rt)];
+        DpSqrtD := D*gen^0 + sqrtD;
+
+        // right kernel of [2, D+Sqrt(D)]
+        kernel := Transpose(KernelMatrix(Transpose(HorizontalJoin(2*gen^0, DpSqrtD))));
+        S, T, _ := SmithForm(Matrix(Integers(), kernel));
+        assert Submatrix(S, 1, 1, 4, 4) eq 1;
+        assert Submatrix(S, 5, 1, 4, 4) eq 0;
+        Tinv := T^-1;
+
+        // we now should compute a matrix R in M_2g(ZZ)
+        // such that P2 = P*R, where End(P2) = ZZ[(D + Sqrt(D))/2]
+        A := Submatrix(Tinv, 1, 5, 4, 4);
+        B := Submatrix(Tinv, 5, 5, 4, 4);
+        // The columns of R tell us how to write
+        // the integral homology of A_max in terms of the integral homology of A
+        // thus for consistency we store the transpose
+        R := 2*A + DpSqrtD*B;
+        Rtomax := Transpose(R);
+
+        newDpSqrtD := Rtomax^-1*DpSqrtD*Rtomax;
+        assert &and[elt mod 2 eq 0 : elt in Eltseq(newDpSqrtD)];
+        newgen := Matrix(Integers(), newDpSqrtD div 2);
+        assert IsMaximal(EquationOrder(MinimalPolynomial(newgen)));
+        newH := LLL([IdentityMatrix(Integers(), 2*g), newgen]);
+        Append(~f`maxend_subquo, <Rtomax, newH>);
+      end for;
+    end if;
+  end if;
+  return Explode(f`saturation_subquo[Quotient select 2 else 1]);
+end intrinsic;
+
+
 
 intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false) -> SeqEnum
   {

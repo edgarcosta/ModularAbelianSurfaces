@@ -56,11 +56,11 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
 end intrinsic;
 
 
-intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false) -> ModMatFldElt, ModMatRngElt
+intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false) -> ModMatFldElt, ModMatRngElt
   { Compute the period matrix associated to f A_f^sub or A_f^quo }
   vprintf ModAbVarRec: "Comuting the lattices...";
   vtime ModAbVarRec:
-  basis, E := IntegralHomology(f : Quotient:=Quotient);
+  basis, E := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   P := PeriodMappingMatrix(f : prec := prec);
   return P*Matrix(BaseRing(P),  Transpose(basis)), E;
 end intrinsic;
