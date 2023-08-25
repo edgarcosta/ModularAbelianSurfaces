@@ -20,6 +20,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   B := Basis(f);
 
   function matrix_helper(ncoeffs)
+    vprintf ModAbVarRec: "Computing PeriodMapping with n = %o...", ncoeffs;
+    vtime ModAbVarRec:
     return ChangeRing(Matrix([pi_f(b) : b in B]), CC) where pi_f := PeriodMapping(f, ncoeffs);
   end function;
 
@@ -28,10 +30,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   ncoeffs := 0;
   ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
   ncoeffs +:= 3*ncoeffs_inc;
-  vtime ModAbVarRec:
   P0 := matrix_helper(ncoeffs);
   ncoeffs +:= ncoeffs_inc;
-  vtime ModAbVarRec:
   P1 := matrix_helper(ncoeffs);
   // P0 and P1 live in rings with extra_prec
   // this checks if they agree up to prec
@@ -39,11 +39,9 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   while not t do
     // FIXME: we could do this much better
     // we could check that the errors are getting smaller and we could even estimate how much we should increase the number of coefficients
-    vprint ModAbVarRec: Sprintf("Current error: %o", ComplexField(8)!e);
+    vprint ModAbVarRec: Sprintf("Current error: %o, by using ncoeffs = %o", ComplexField(8)!e, ncoeffs);
     P0 := P1;
     ncoeffs +:= ncoeffs_inc;
-    vprintf ModAbVarRec: "ncoeffs increased to %o\n", ncoeffs;
-    vtime ModAbVarRec:
     P1 := matrix_helper(ncoeffs);
     t, e := AlmostEqualMatrix(P0, P1);
     assert ncoeffs lt 50*ncoeffs_inc; // sanity check that we are converging

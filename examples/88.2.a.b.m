@@ -1,0 +1,14 @@
+AttachSpec("spec");
+label := "88.2.a.b";
+SetVerbose("ModAbVarRec", 2);
+prec := 50;
+f := LMFDBNewform(label);
+QQ := RationalsExtra(prec);
+Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
+b, isog, C := RationalGenus2CurvesWithPolarization(Omega, E, f);
+assert b;
+assert Abs(Determinant(isog)) eq 1;
+print "A_sub = Jac(C)";
+printf "where C = %o\n", C;
+piC := PeriodMatrix(C);
+//printf "Isomorphism = %o\n", isog;
