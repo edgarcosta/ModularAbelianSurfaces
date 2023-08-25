@@ -17,6 +17,7 @@ intrinsic LMFDBNewform(label::MonStgElt) -> ModSym
             break;
         end if;
     end for;
+    require assigned hc: "label not found in the database";
     return MakeNewformModSym(level, hc);
 end intrinsic;
 

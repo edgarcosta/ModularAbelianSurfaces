@@ -9,12 +9,22 @@ declare attributes ModSym:
   hecke_ring_subquo, // SeqEnum[SeqEnum[AlgMatElt]]
   maxend_subquo; // SeqEnum[Tup<AlgMatElt,SeqEnum[AlgMatElt]>] the second entry is the hecke ring
 
-intrinsic IsogenySubToQuo(f) -> AlgMAtElt
-{ The isogeny between subvariety and the quotient varieties of J_0(N) associated to f, i.e., how to write the (integral homology) basis for the quotient in terms of the basis for the subvariety}
+intrinsic IsogenyFromSub(f : Quotient:=false, MaximalEnd:=false) -> AlgMAtElt
+{ The isogeny between subvariety and A', where A' can be the subvariaty/quotient variety of J_0(N) associated to f (with maximal endomorphism ring), i.e., how to write the (integral homology) basis for the quotient in terms of the basis for the subvariety}
   if not assigned f`integral_homology_subquo then
     _ := IntegralHomology(f);
   end if;
-  return f`homology_quo_in_sub;
+  R := IdentityMatrix(Integers(), Dimension(f));
+  if Quotient then
+    // sub to quotient
+    R := f`homology_quo_in_sub;
+  end if;
+  if MaximalEnd then
+    // Af to Af^max
+    Rtomax := IsogenyToMaximalEndomomorphism(f : Quotient:=Quotient);
+    R := Rtomax*R;
+  end if;
+  return R;
 end intrinsic;
 
 intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt, AlgMatElt
@@ -112,7 +122,7 @@ end intrinsic;
 
 
 
-intrinsic IntegralHeckeOperator(f, n : Quotient:=false) -> AlgMatElt
+intrinsic IntegralHeckeOperatorNew(f, n : Quotient:=false) -> AlgMatElt
 { A matrix representing the nth Hecke operator with respect to the integral homology basis M }
   S := Matrix(Rationals(), IntegralHomology(f : Quotient:=Quotient));
   Tn := HeckeOperator(f, n);
@@ -134,7 +144,7 @@ intrinsic HeckeRing(f : Quotient:=false, MaximalEnd:=false) -> SeqEnum[AlgMatElt
   if not assigned f`hecke_ring_subquo then
     OH, HtoOH := HeckeEigenvalueRing(f);
     n, an := PrimitiveHeckeOperator(f);
-    Tns := [IntegralHeckeOperator(f, n : Quotient:=q) : q in [false, true]];
+    Tns := [IntegralHeckeOperatorNew(f, n : Quotient:=q) : q in [false, true]];
     // this is a primitive element for the field, but perhaps not for the ring, see for example 94.2.a.b where a3 = 2sqrt(2)
     require Degree(OH) eq 2: "At the moment only implemented for dimension 2"; // we could also check for the order to be monogenic for higher degree, but further changes are needed below
     // an = a + b*OH.2
@@ -157,13 +167,13 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
 {
   Retun the isogeny A -> A_max where End(A_max) := MaximalOrder(End(A) = HeckeRing(A) ) and A is the subvariety (or quotient) of J_0(N) associated to f, and the HeckeRing
 }
-  if not assigned f`saturation_subquo then
+  if not assigned f`maxend_subquo then
     OH := HeckeEigenvalueRing(f);
     require Degree(OH) eq 2 : "Only implemented for the case that the hecke ring has dimension two";
     g := 2;
     Hs := [HeckeRing(f : Quotient:=q) : q in [false, true]];
     if IsMaximal(OH) then
-      f`saturation_subquo := [ <IdentityMatrix(Integers(), 2*g), elt> : elt in Hs];
+      f`maxend_subquo := [ <IdentityMatrix(Integers(), 2*g), elt> : elt in Hs];
     else
       gens := [elt[2] : elt in Hs];
       minpoly := MinimalPolynomial(gens[1]); // gens have the same minimal polynomial
@@ -176,7 +186,7 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
       sqrtDpoly := x^2 - D;
       rts := Roots(sqrtDpoly, K);
       rt := rts[1][1];
-      f`saturation_subquo := [];
+      f`maxend_subquo := [];
       for gen in gens do // now we handle the subvariety/quotient independently
         sqrtD := &+[c*gen^(i-1) : i->c in Eltseq(rt)];
         DpSqrtD := D*gen^0 + sqrtD;
@@ -192,39 +202,38 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
         // such that P2 = P*R, where End(P2) = ZZ[(D + Sqrt(D))/2]
         A := Submatrix(Tinv, 1, 5, 4, 4);
         B := Submatrix(Tinv, 5, 5, 4, 4);
-        // The columns of R tell us how to write
+        // The columns of Rtomax tell us how to write
         // the integral homology of A_max in terms of the integral homology of A
-        // thus for consistency we store the transpose
-        R := 2*A + DpSqrtD*B;
-        Rtomax := Transpose(R);
+        // thus for consistency we store and return the transpose
+        Rtomax := 2*A + DpSqrtD*B;
 
-        newDpSqrtD := Rtomax^-1*DpSqrtD*Rtomax;
+        newDpSqrtD := Matrix(Integers(), R^-1*DpSqrtD*R) where R:=Matrix(Rationals(), Rtomax);
         assert &and[elt mod 2 eq 0 : elt in Eltseq(newDpSqrtD)];
         newgen := Matrix(Integers(), newDpSqrtD div 2);
         assert IsMaximal(EquationOrder(MinimalPolynomial(newgen)));
         newH := LLL([IdentityMatrix(Integers(), 2*g), newgen]);
-        Append(~f`maxend_subquo, <Rtomax, newH>);
+        Append(~f`maxend_subquo, <Transpose(Rtomax), newH>);
       end for;
     end if;
   end if;
-  return Explode(f`saturation_subquo[Quotient select 2 else 1]);
+  return Explode(f`maxend_subquo[Quotient select 2 else 1]);
 end intrinsic;
 
 
 
-intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false) -> SeqEnum
+intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false, MaximalEnd:=false) -> SeqEnum
   {
-    A basis of self-dual homomorphisms from A -> A^v defined over Q, given as 2g by 2g where A is the subvariety (or quotient) of J_0(N) associated to f
+  A basis of self-dual homomorphisms from A -> A^v defined over Q, given as 2g by 2g where A is the subvariety (or quotient) of J_0(N) associated to f
     }
-  Rs := HeckeRing(f : Quotient:=Quotient);
-  _, E := IntegralHomology(f : Quotient:=Quotient);
+  Rs := HeckeRing(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  _, E := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   g := Nrows(E) div 2;
   //maps Omega to Omega dual are just E composed with endomorphisms, then saturated
   ERs := [E*elt : elt in Rs];
   // now we saturate
   M := Matrix([Eltseq(elt) : elt in ERs]);
-  sERs := [Matrix(Integers(), 2*g, 2*g, Eltseq(elt)) : elt in Rows(M)];
-  pairs := [<1,elt> : elt in sERs]; // SkewSymmetricHomomorphismsRepresentation expects pairs
+  sERs := [Matrix(Integers(), 2*g, 2*g, Eltseq(elt)) : elt in Rows(Saturation(M))];
+  pairs := [<1, elt> : elt in sERs]; // SkewSymmetricHomomorphismsRepresentation expects pairs
   pairs_skewZZ := SkewSymmetricHomomorphismsRepresentation(pairs);
   skewZZ := [elt[2] : elt in pairs_skewZZ];
   return LLL(skewZZ); // improve it by applying LLL

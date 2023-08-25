@@ -139,16 +139,12 @@ intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt, Self
 end intrinsic;
 
 intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum
-{
-  " \\"
-}
+{ " } //"
     return RationalPrincipalPolarizations(Omega, E, [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)]);
 end intrinsic;
 
 intrinsic RationalPrincipalPolarizations(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false ) -> SeqEnum
-{
-  " \\"
-}
+{ " } //"
   Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   SelfDualHoms := RationalSelfDualHomomorphisms(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   return RationalPrincipalPolarizations(Omega, E, SelfDualHoms);

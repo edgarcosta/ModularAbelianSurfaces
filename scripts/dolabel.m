@@ -21,7 +21,7 @@ end if;
 function Core(label, prec : debug := false);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
-  Hquo_in_Hsub := Transpose(IsogenySubToQuo(f));
+  Hquo_in_Hsub := Transpose(IsogenyFromSub(f : Quotient:=true));
   res := [* *];
   for quosat in CartesianPower([false,true], 2) do
     quotient, saturate := Explode(quosat);

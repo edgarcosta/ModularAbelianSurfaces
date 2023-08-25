@@ -19,7 +19,6 @@ intrinsic NormalizedPeriodMatrix(P::ModMatFldElt) -> ModMatFldElt
     P := HorizontalJoin(P2, P1);
     return P;
 end intrinsic;
-*/
 
 
 intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatFldElt, AlgMatElt, AlgMatElt, SeqEnum, RngOrd
@@ -138,6 +137,7 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
     return false, J, "The curve is off by more than quadratic twists";
   end if;
 end intrinsic;
+*/
 
 intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt, f::ModSym) -> BoolElt, AlgMatElt, CrvHyp, .
 { From a period matrix Omega and a pairing E associated to f, return a boolean, an isomorphsim and Curve/Igusa invariants/j-invariants assobiated to one ot the principal polarizations }
