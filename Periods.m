@@ -1,6 +1,6 @@
 // Aims to improve the functionality of Geometry/ModAbVar/periods.m
 // in particular the number of Fourier coefficients is adaptive and
-// and uses NewformLattices instead of calling IntegralHomology
+// and uses IntegralHomology(f::ModSym) instead of calling the magma builtin IntegralHomology(A::ModAbVar)
 
 intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, FldElt
   { Compute the normalized period matrix associated to f }
@@ -62,7 +62,7 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false) -> ModMatFldElt, M
   { Compute the period matrix associated to f A_f^sub or A_f^quo }
   vprintf ModAbVarRec: "Comuting the lattices...";
   vtime ModAbVarRec:
-  basis, E := Explode(NewformLattices(f)[Quotient select 2 else 1]);
+  basis, E := IntegralHomology(f : Quotient:=Quotient);
   P := PeriodMappingMatrix(f : prec := prec);
   return P*Matrix(BaseRing(P),  Transpose(basis)), E;
 end intrinsic;

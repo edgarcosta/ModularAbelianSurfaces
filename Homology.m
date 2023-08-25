@@ -2,10 +2,20 @@
 // instead of calling IntegralHomology in Geometry/ModAbVar/homology.m
 
 declare attributes ModSym:
-  integral_homology_subquo; // SeqEnum[Tup]
+  integral_homology_subquo, // SeqEnum[Tup]
+  isogeny_quo_in_sub,
+  hecke_ring_subquo;
 
-intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
-{Find the homology for the abelian subvariety associated to f and the quotient variety of J0N, and the intersection pairing}
+intrinsic IsogenySubToQuo(f) -> AlgMAtElt
+{ The isogeny between subvariety and the quotient varieties of J_0(N) associated to f, i.e., how to write the (integral homology) basis for the quotient in terms of the basis for the subvariety}
+  if not assigned f`integral_homology_subquo then
+    _ := IntegralHomology(f);
+  end if;
+  return f`integral_homology_subquo[3];
+end intrinsic;
+
+intrinsic IntegralHomology(f::ModSym : Quotient:=false) -> AlgMatElt, AlgMatElt
+{ Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
   if not assigned f`integral_homology_subquo then
     A := AmbientSpace(f);
     L, phi := Lattice(A);
@@ -87,6 +97,62 @@ intrinsic NewformLattices(f::ModSym) -> SeqEnum[Tup]
     // Equo div:= GCD(Eltseq(Equo));
     f`integral_homology_subquo := [* <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo>, Hquo_in_Hsub *];
   end if;
-  return f`integral_homology_subquo;
+  return Explode(f`integral_homology_subquo[Quotient select 2 else 1]);
 end intrinsic;
 
+
+
+intrinsic IntegralHeckeOperator(f, n : Quotient:=false) -> AlgMatElt
+{ A matrix representing the nth Hecke operator with respect to the integral homology basis M }
+  S := Matrix(Rationals(), IntegralHomology(f : Quotient:=Quotient));
+  Tn := HeckeOperator(f, n);
+  return Matrix(Integers(),Transpose(S*Tn*S^-1));
+end intrinsic;
+
+intrinsic PrimitiveHeckeOperator(f) -> RngIntElt, FldNumElt
+{ return n and an, such that an is a primitive element for the hecke algebra, i.e., Q(an) = Q[a1,a2,a3,...] }
+  for n->an in Eltseq(PowerSeries(f, HeckeBound(f))) do
+    if IsPrimitive(an) then
+      return n, an;
+    end if;
+  end for;
+  assert false;
+end intrinsic;
+
+intrinsic HeckeRing(f : Quotient:=false) -> SeqEnum[AlgMatElt]
+{ A sequence of marices that form Z-basis for the Hecke ring associated to A_f ^quo/sub }
+  if not assigned f`hecke_ring_subquo then
+    OH, HtoOH := HeckeEigenvalueRing(f);
+    n, an := PrimitiveHeckeOperator(f);
+    Tns := [IntegralHeckeOperator(f, n : Quotient:=q) : q in [false, true]];
+    // this is a primitive element for the field, but perhaps not for the ring, see for example 94.2.a.b where a3 = 2sqrt(2)
+    assert Degree(OH) eq 2; // we could also check for the order to be monogenic for higher degree, but further changes are needed below
+    // an = a + b*OH.2
+    a, b := Explode(ChangeUniverse(Eltseq(HtoOH(an)), Integers()));
+    assert (HtoOH(an) - a) div b eq OH.2;
+    assert &and[&and[elt mod b eq 0 : elt in Eltseq(Tn - a)] : Tn in Tns];
+    Rs := [(Tn - a) div b : Tn in Tns];
+    f`hecke_ring_subquo := [[IdentityMatrix(Integers(), Nrows(R)), R] : R in Rs];
+  end if;
+  return f`hecke_ring_subquo[Quotient select 2 else 1];
+end intrinsic;
+
+import "ComplexTori.m" : SkewSymmetricHomomorphismsRepresentation;
+
+intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false) -> SeqEnum
+  {
+    A basis of self-dual homomorphisms from A -> A^v defined over Q, given as 2g by 2g where A is the subvariety (or quotient) of J_0(N) associated to f
+    }
+  Rs := HeckeRing(f : Quotient:=Quotient);
+  _, E := IntegralHomology(f : Quotient:=Quotient);
+  g := Nrows(E) div 2;
+  //maps Omega to Omega dual are just E composed with endomorphisms, then saturated
+  ERs := [E*elt : elt in Rs];
+  // now we saturate
+  M := Matrix([Eltseq(elt) : elt in ERs]);
+  sERs := [Matrix(Integers(), 2*g, 2*g, Eltseq(elt)) : elt in Rows(M)];
+  pairs := [<1,elt> : elt in sERs]; // SkewSymmetricHomomorphismsRepresentation expects pairs
+  pairs_skewZZ := SkewSymmetricHomomorphismsRepresentation(pairs);
+  skewZZ := [elt[2] : elt in pairs_skewZZ];
+  return LLL(skewZZ); // improve it by applying LLL
+end intrinsic;

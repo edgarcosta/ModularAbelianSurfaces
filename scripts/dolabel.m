@@ -21,8 +21,7 @@ end if;
 function Core(label, prec : debug := false);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
-  _ := NewformLattices(f);
-  Hquo_in_Hsub := Transpose(f`integral_homology_subquo[3]);
+  Hquo_in_Hsub := Transpose(IsogenySubToQuo(f));
   res := [* *];
   for quosat in CartesianPower([false,true], 2) do
     quotient, saturate := Explode(quosat);
