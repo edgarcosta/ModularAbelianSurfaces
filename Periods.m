@@ -4,9 +4,8 @@
 
 intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, FldElt
   { Compute the normalized period matrix associated to f }
-  // before we defaulted to this guess with the first 2 replaced by 20
   // clear cache
-  extra_prec := Ceiling(prec/0.9 + 10); // equality is checked at 90% of the digits
+  extra_prec := Ceiling(prec/0.95 + 10); // equality is checked at 95% of the digits or at extra 10 digits
   if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt extra_prec then
     delete f`PeriodMap;
   end if;
@@ -25,6 +24,7 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   end function;
 
 
+  // before we defaulted to this guess with the first 2 replaced by 20
   ncoeffs := 0;
   ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
   ncoeffs +:= 3*ncoeffs_inc;

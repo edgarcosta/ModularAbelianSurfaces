@@ -9,5 +9,5 @@ assert b;
 assert Abs(Determinant(isog)) eq 1;
 print "A_sub = Jac(C)";
 printf "where C = %o\n", C;
-//piC := PeriodMatrix(C);
+piC := PeriodMatrix(C);
 //printf "Isomorphism = %o\n", isog;
