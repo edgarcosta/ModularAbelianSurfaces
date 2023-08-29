@@ -1,6 +1,8 @@
 AttachSpec("spec");
 label := "88.2.a.b";
 SetVerbose("ModAbVarRec", 2);
+SetVerbose("ModAbVar", 2);
+SetVerbose("ModularSymbols", 2);
 prec := 50;
 f := LMFDBNewform(label);
 res := RationalGenus2Curves(f : prec:=prec);
