@@ -129,7 +129,7 @@ intrinsic RationalGenus2Curves(f::ModSym : prec:=80, Quotient:=false, MaximalEnd
   vprintf ModAbVarRec: "RationalGenus2Curves: #PPSs = %o\n", #PPs;
 
   res := [* *];
-  if #pps eq 0 then
+  if #PPs eq 0 then
     return res;
   end if;
   Omega := PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
