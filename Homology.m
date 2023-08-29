@@ -193,7 +193,8 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
 
         // right kernel of [2, D+Sqrt(D)]
         kernel := Transpose(KernelMatrix(Transpose(HorizontalJoin(2*gen^0, DpSqrtD))));
-        S, T, _ := SmithForm(Matrix(Integers(), kernel));
+        // REMOVE: unused when when 2.28-3 arrives
+        S, T, unused := SmithForm(Matrix(Integers(), kernel));
         assert Submatrix(S, 1, 1, 4, 4) eq 1;
         assert Submatrix(S, 5, 1, 4, 4) eq 0;
         Tinv := T^-1;

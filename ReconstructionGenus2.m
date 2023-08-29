@@ -373,12 +373,15 @@ end function;
 intrinsic ReconstructGenus2Curve(P::., K::Fld : Base:=false, Dom:=[-5..5], UpperBound:=16, G2CC:=false) -> CrvHyp, Map, BoolElt, .
 { Reconstruct curve from period matrix P, returned over an extension of the base field K.}
 
+  vprintf CurveRec: "ReconstructGenus2Curve(%o, %o)...\n", Matrix(ComplexField(8), P), K;
   CC := BaseRing(Parent(P));
   assert IsBigPeriodMatrix(P);
   if G2CC cmpeq false then
     G2CC := ReconstructCurveG2CC(P);
   end if;
   fCC, tau, P := Explode(G2CC);
+  vprintf CurveRec: "newP = %o\n", Matrix(ComplexField(8), P);
+  vprintf CurveRec: "Curve over  CC %o\n", ChangeRing(fCC, ComplexField(8));
 
   // one could directly call them from JCC, but the function below also normalizes them
   JCC := IgusaInvariantsG2(P : G2CC:=G2CC); //Edgar: is this really worth it to pass G2CC?
@@ -433,9 +436,11 @@ intrinsic ReconstructGenus2Curve(P::., K::Fld : Base:=false, Dom:=[-5..5], Upper
     end if;
   end if;
   vprint CurveRec : "done identifying correct twist.";
+  vprint CurveRec: Sprintf("Twist = %m", R);
 
   /* Recover twisted polynomial over number field */
   fCC := lam^2*fCC; coeffsCC := Coefficients(fCC);
+  vprintf CurveRec: "untwisted Curve over  CC %o\n", ChangeRing(fCC, ComplexField(8));
   coeffsCC := ChangeUniverse(coeffsCC, K`CC);
 
   vprint CurveRec : "Algebraizing...";
@@ -459,10 +464,15 @@ intrinsic ReconstructGenus2Curve(P::., K::Fld : Base:=false, Dom:=[-5..5], Upper
 
   YCC := RiemannSurface(fCC, 2 : Precision := Precision(CC) + 10);
   Q := ChangeRing(YCC`BigPeriodMatrix, CC) / 2;
+  Y2CC := RiemannSurface(PolynoialRing(CC)!coeffs, 2: Precision := Precision(CC) + 10)
+  Q2 := ChangeRing(Y2CC`BigPeriodMatrix, CC) / 2;
 
 
   // The next lines functions as an assertion
-  vprint CurveRec, 2 : "Check for isomorphism...";
+  vprint CurveRec, 2 : "Check for isomorphism... AP = QR";
+  vprintf CurveRec, 2 : "Q = Pi(C) = %o\n", Matrix(ComplexField(8), Q);
+  vprintf CurveRec, 2 : "P = %o\n", Matrix(ComplexField(8), P);
+  vprint CurveRec, 2: Sprintf("R = %m", R);
   /*
   //Edgar to Jeroen: A doesnt necessarily need to be the identity...
   A := IdentityMatrix(CC, 2);
@@ -476,6 +486,8 @@ intrinsic ReconstructGenus2Curve(P::., K::Fld : Base:=false, Dom:=[-5..5], Upper
 
   f := PolynomialRing(L)!coeffs;
   Y := HyperellipticCurve(f);
+  vprintf CurveRec: "found %o\n", Y;
+  vprintf CurveRec: "ReconstructGenus2Curve(%o, %o) done\n", Matrix(ComplexField(8), P), K;
   return Y, hKL, true, _;
 end intrinsic;
 

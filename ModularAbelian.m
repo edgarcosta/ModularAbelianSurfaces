@@ -61,7 +61,8 @@ intrinsic PeriodMatrixWithMaximalOrder(P::ModMatFldElt, E::AlgMatElt) -> ModMatF
   kernel, bool := IntegralRightKernel(HorizontalJoin(P*2, P*Matrix(CC, DpSqrtD)));
   assert bool;
 
-  S, T, _ := SmithForm(Matrix(Integers(), kernel));
+  // FIXME remove unused when 2.28-3 arrives
+  S, T, unused := SmithForm(Matrix(Integers(), kernel));
   assert Submatrix(S, 1, 1, 4, 4) eq 1;
   assert Submatrix(S, 5, 1, 4, 4) eq 0;
   Tinv := T^-1;

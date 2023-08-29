@@ -76,3 +76,6 @@ intrinsic Eltseq(C::CrvHyp) -> SeqEnum
     return [[Eltseq(elt) : elt in Eltseq(pol)] : pol in [f, g]];
   end if;
 end intrinsic;
+
+
+

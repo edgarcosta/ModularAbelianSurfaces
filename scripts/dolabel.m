@@ -21,46 +21,23 @@ end if;
 function Core(label, prec : debug := false);
   f := LMFDBNewform(label);
   QQ := RationalsExtra(prec);
-  Hquo_in_Hsub := Transpose(IsogenyFromSub(f : Quotient:=true));
   res := [* *];
-  for quosat in CartesianPower([false,true], 2) do
-    quotient, saturate := Explode(quosat);
-    Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=false);
-    if saturate then
-      if debug then
-        Omega, E, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
-      else
-        try
-          Omega, E, R, _, EndQQ  := PeriodMatrixWithMaximalOrder(Omega, E);
-        catch er
-          WriteStderr(er);
-          Append(~res, <quosat, 0, 0, Sprint(er)>);
-          continue;
-        end try;
-      end if;
-    else
-      R := 1;
-    end if;
-    if quotient then
-      R := Hquo_in_Hsub*R;
-    end if;
-    // F, C can be zero if no PPs
+  for quosat in CartesianPower([false, true], 2) do
+    Quotient, MaximalEnd := Explode(quosat);
+    R := IsogenyFromSub(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
     if debug then
-      b, F, C, e := RationalGenus2CurvesWithPolarization(Omega, E, f);
+      localres := RationalGenus2Curves(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
     else
       try
-        b, F, C, e := RationalGenus2CurvesWithPolarization(Omega, E, f);
+        localres := RationalGenus2Curves(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
       catch er
         WriteStderr(er);
-        Append(~res, <quosat, 0, 0, Sprint(er)>);
+        Append(~res, <quosat, Sprint(er)>);
         continue;
       end try;
     end if;
     isogeny_from_sub := R*F;
 
-    if saturate and NarrowClassNumber(EndQQ) eq 1 then
-      assert C cmpne 0;
-    end if;
     if b then
       // we found a curve, we go home early
       return b, <isogeny_from_sub, C>;

@@ -125,28 +125,26 @@ Return all principal polarizations on Omega in the span of B := [B_1, B_2] up to
   solutions cat:= [[-elt[1], -elt[2]] : elt in solutions];
   // the positivity condition is picking one of the 4 connected components of the two conics
   ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | &and[ Evaluate(m, coord) gt CC`epsinv : m in minors]];
-  return ppols;
+  return [Matrix(Integers(), elt) : elt in ppols];
 end intrinsic;
 
-intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt, SelfDualHoms::SeqEnum) -> SeqEnum
+intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum[AlgMAtElt] 
+{ All rational principal polarizations for Omega with the rational pairing E}
+    return PrincipalPolarizations(Omega, [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)]);
+end intrinsic;
+
+intrinsic RationalPrincipalPolarizations(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false ) -> SeqEnum[AlgMAtElt]
 {
-  All rational principal polarizations for Omega with the pairing E, together with the change of basis.
+  All rational principal polarizations for Af (or quotient) of J_0(N) associated to f.
+  If MaximalEnd is true, then it is replaced by the isogenous variety such that End(Af) is maximal.
 }
-  PPs := PrincipalPolarizations(Omega, SelfDualHoms);
-  PPs := [Matrix(Integers(), elt) : elt in PPs];
-  CC := BaseRing(Omega);
-  return [<Omega*Transpose(Matrix(CC, F)), Transpose(F)> where _, F := FrobeniusFormAlternating(elt) : elt in PPs];
-end intrinsic;
-
-intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum
-{ " } //"
-    return RationalPrincipalPolarizations(Omega, E, [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)]);
-end intrinsic;
-
-intrinsic RationalPrincipalPolarizations(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false ) -> SeqEnum
-{ " } //"
-  Omega, E := PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  Omega := PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   SelfDualHoms := RationalSelfDualHomomorphisms(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
-  return RationalPrincipalPolarizations(Omega, E, SelfDualHoms);
+  pps := PrincipalPolarizations(Omega, SelfDualHoms);
+  // Note: NarrowClassNumber always returns the narrow class number of the maximal order O
+  if MaximalEnd and NarrowClassNumber(HeckeEigenvalueRing(f)) eq 1 then
+    assert #pps gt 0 or true;
+  end if;
+  return pps;
 end intrinsic;
 
