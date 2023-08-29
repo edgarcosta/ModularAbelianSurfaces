@@ -139,8 +139,8 @@ intrinsic PrimitiveHeckeOperator(f) -> RngIntElt, FldNumElt
   assert false;
 end intrinsic;
 
-intrinsic HeckeRing(f : Quotient:=false, MaximalEnd:=false) -> SeqEnum[AlgMatElt]
-{ A sequence of marices that form Z-basis for the Hecke ring associated to A_f ^quo/sub }
+intrinsic HeckeAlgebraIntegralBasis(f : Quotient:=false, MaximalEnd:=false) -> SeqEnum[AlgMatElt]
+{ A sequence of matrices that form Z-basis for the Hecke ring associated to A_f ^quo/sub }
   if not assigned f`hecke_ring_subquo then
     OH, HtoOH := HeckeEigenvalueRing(f);
     n, an := PrimitiveHeckeOperator(f);
@@ -165,13 +165,13 @@ end intrinsic;
 //TODO is this a functor?
 intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqEnum[AlgMatElt]
 {
-  Retun the isogeny A -> A_max where End(A_max) := MaximalOrder(End(A) = HeckeRing(A) ) and A is the subvariety (or quotient) of J_0(N) associated to f, and the HeckeRing
+  Retun the isogeny A -> A_max where End(A_max) := MaximalOrder(End(A) = HeckeAlgebraIntegralBasis(A) ) and A is the subvariety (or quotient) of J_0(N) associated to f, and the HeckeAlgebraIntegralBasis
 }
   if not assigned f`maxend_subquo then
     OH := HeckeEigenvalueRing(f);
     require Degree(OH) eq 2 : "Only implemented for the case that the hecke ring has dimension two";
     g := 2;
-    Hs := [HeckeRing(f : Quotient:=q) : q in [false, true]];
+    Hs := [HeckeAlgebraIntegralBasis(f : Quotient:=q) : q in [false, true]];
     if IsMaximal(OH) then
       f`maxend_subquo := [ <IdentityMatrix(Integers(), 2*g), elt> : elt in Hs];
     else
@@ -226,7 +226,7 @@ intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false, MaximalEnd:
   {
   A basis of self-dual homomorphisms from A -> A^v defined over Q, given as 2g by 2g where A is the subvariety (or quotient) of J_0(N) associated to f
     }
-  Rs := HeckeRing(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  Rs := HeckeAlgebraIntegralBasis(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   _, E := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   g := Nrows(E) div 2;
   //maps Omega to Omega dual are just E composed with endomorphisms, then saturated
