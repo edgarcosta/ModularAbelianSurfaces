@@ -1,3 +1,74 @@
+intrinsic PossibleQuadraticTwists(C::CrvHyp, euler_factors::UserProgram, BadPrimes: Bound:=200) -> RngIntElt
+{ Find a quadratic twist such that C and it matches the given Euler factors, returns 0 if no quadratic twist is found}
+  vprintf ModAbVarRec: "Find correct quadratic twist...";
+  orderG := #GeometricAutomorphismGroup(C);
+  vprintf ModAbVarRec: "The geometric automorphism group is of size %o.\n", orderG;
+  oktofail := orderG ne 2;
+  disc := Discriminant(C);
+  D := Integers()! (Numerator(disc) * Denominator(disc));
+  badprimes := IndexedSet(PrimeDivisors(D) cat BadPrimes cat [-1]);
+  primes := Sort(SetToSequence(IndexedSet(PrimesUpTo(Bound)) diff badprimes));
+  twistdata := [];
+  splittingdata := [];
+  usedprimes := []; // not used for anything
+  // this could be written without Bound and with a while loop
+  for p in primes do
+
+    // Compute euler factor of the curve
+    vprintf ModAbVarRec: "p = %o\nEuler factor C ", p;
+    vtime ModAbVarRec:
+    efc := EulerFactor(C, p);
+    vprint ModAbVarRec: "Euler factor C = ", Coefficients(efc);
+
+    // Compute euler factor of the original object
+    vprintf ModAbVarRec: "Euler factor original ", p;
+    vtime ModAbVarRec:
+    eff := euler_factors(p);
+    vprint ModAbVarRec: "Euler factor f = ", Coefficients(eff);
+
+
+    efctwist := Evaluate(efc, -Parent(efc).1);
+    if eff notin [efc, efctwist] then
+        require oktofail : Sprintf("is not a local quadratic twist at p=%o\nefc = %o != %o = eff\n C = %o, and #G = %o", p, Eltseq(efc), Eltseq(eff), C, orderG);
+        return [];
+    end if;
+
+    if efc eq efctwist then
+      continue; // we cannot distinguish between either
+    end if;
+
+    Append(~usedprimes, p);
+    if efc eq eff then
+      Append(~twistdata, 0);
+    else
+      Append(~twistdata, 1);
+    end if;
+    Append(~splittingdata, [(KroneckerSymbol(q, p) eq -1) select 1 else 0 : q in badprimes]);
+    if Rank(Matrix(GF(2), splittingdata)) eq #badprimes then
+      break p;
+    end if;
+  end for;
+  M := Transpose(Matrix(GF(2), splittingdata));
+  v := Vector(GF(2), twistdata);
+  vprint ModAbVarRec: badprimes, usedprimes, Rank(M), #badprimes;
+  vprint ModAbVarRec: M;
+  vprint ModAbVarRec: Vector(GF(2), twistdata);
+  k := Nrows(M);
+  solutions := [Eltseq(elt)[1..k] : elt in Kernel(VerticalJoin(M, Matrix(v))) | elt[k + 1] eq 1];
+  vprint ModAbVarRec: "PossibleQuadraticTwists: Done";
+  return [#r gt 0 select &*r else 1
+          where r := [badprimes[i]: i->e in sol | not IsZero(e)]
+    : sol in solutions];
+end intrinsic;
+
+intrinsic PossibleQuadraticTwists(C::CrvHyp, f::ModSym : Bound:=200) -> RngIntElt
+{ Find a quadratic twist such that C and f have the same L-function, returns 0 if no quadratic twist is found}
+  euler_factors := function(p)
+    return Reverse(CharpolyOfFrobenius(f, p));
+  end function;
+  return PossibleQuadraticTwists(C, euler_factors, PrimeDivisors(Level(f)) : Bound:=Bound);
+end intrinsic;
+
 
 intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp, .
 { Given a period matrix with the standard symplectic polarization we reconstruct a RationalGenus2Curve isomorphic as torus to Omega and isogeneous to it (we use the euler factors to fix quadratic twists)}
@@ -19,7 +90,7 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
     ));
   end try;
   if b then
-    return true, (C), "";
+    return true, ReducedMinimalWeierstrassModel(C), "";
   end if;
   b, J := IntegralReconstructionIgusaInvariants(Omega);
   require b : "Failed to run IntegralReconstructionIgusaInvariants";

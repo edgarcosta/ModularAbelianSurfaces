@@ -140,38 +140,38 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
 end intrinsic;
 */
 
-intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt, f::ModSym) -> BoolElt, AlgMatElt, CrvHyp, .
-{ From a period matrix Omega and a pairing E associated to f, return a boolean, an isomorphsim and Curve/Igusa invariants/j-invariants assobiated to one ot the principal polarizations }
-  vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization...";
-  PPs := RationalPrincipalPolarizations(Omega, E);
-  QQ := RationalsExtra(Precision(BaseRing(Omega)));
-  vprintf ModAbVarRec: "#PPSs = %o\n", #PPs;
-  res := [* *];
-  for i->pp in PPs do
-    vprintf ModAbVarRec: "Trying polarization = %o\n", i;
-      newOmega, F := Explode(pp); // newOmega == Omega * F
-      b, C, e := RationalGenus2Curve(newOmega, f);
-      if b then
-        vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization: found curve!";
-        return b, F, C, _;
-      else
-          Append(~res, <F, C, e>);
-      end if;
-  end for;
-  vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization: sorting results";
-  // no curves were found
-  if #res eq 0 then
-    return true, [], [], _;
-  else
-    for r in res do
-      if "twists" in r[3] then
-        return false, r[1], r[2], r[3];
-      end if;
-    end for;
-    // no twist has been mentioned
-    return false, r[1], r[2], r[3] where r := res[1];
-  end if;
-end intrinsic;
+// intrinsic RationalGenus2CurvesWithPolarization(Omega::ModMatFldElt, E::AlgMatElt, f::ModSym) -> BoolElt, AlgMatElt, CrvHyp, .
+// { From a period matrix Omega and a pairing E associated to f, return a boolean, an isomorphsim and Curve/Igusa invariants/j-invariants assobiated to one ot the principal polarizations }
+//   vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization...";
+//   PPs := RationalPrincipalPolarizations(Omega, E);
+//   QQ := RationalsExtra(Precision(BaseRing(Omega)));
+//   vprintf ModAbVarRec: "#PPSs = %o\n", #PPs;
+//   res := [* *];
+//   for i->pp in PPs do
+//     vprintf ModAbVarRec: "Trying polarization = %o\n", i;
+//       newOmega, F := Explode(pp); // newOmega == Omega * F
+//       b, C, e := RationalGenus2Curve(newOmega, f);
+//       if b then
+//         vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization: found curve!";
+//         return b, F, C, _;
+//       else
+//           Append(~res, <F, C, e>);
+//       end if;
+//   end for;
+//   vprint ModAbVarRec : "RationalGenus2CurvesWithPolarization: sorting results";
+//   // no curves were found
+//   if #res eq 0 then
+//     return true, [], [], _;
+//   else
+//     for r in res do
+//       if "twists" in r[3] then
+//         return false, r[1], r[2], r[3];
+//       end if;
+//     end for;
+//     // no twist has been mentioned
+//     return false, r[1], r[2], r[3] where r := res[1];
+//   end if;
+// end intrinsic;
 
 
 
@@ -210,26 +210,26 @@ intrinsic SomeIsogenousPrincipallyPolarized(P::ModMatFldElt: D:= [-10..10]) -> A
 end intrinsic;
 */
 
-intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
-{ TODO: fill in doc }
-  vprintf ModAbVarRec: "Finding a polarizations %o...", D;
-  vtime ModAbVarRec:
-  polarizations := SomePrincipalPolarizations(P : D:=D);
-  vprint ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
-  if #polarizations eq 0 then
-    b := D[1]; e := D[#D];
-    if (e - b + 1) eq #D then
-      vprintf ModAbVarRec: "increasing D = %o ", D;
-      D := [b - #D div 2 .. e + #D div 2];
-      vprintf ModAbVarRec: "to D = %o\n", D;
-      vprintf ModAbVarRec: "Finding a polarizations %o...", D;
-      vtime ModAbVarRec:
-      polarizations := SomePrincipalPolarizations(P : D:=D);
-      vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
-    end if;
-  end if;
-  return polarizations;
-end intrinsic;
+// intrinsic FindPrincipalPolarizations(P::ModMatFldElt : D:=[-10..10]) -> SeqEnum
+// { TODO: fill in doc }
+//   vprintf ModAbVarRec: "Finding a polarizations %o...", D;
+//   vtime ModAbVarRec:
+//   polarizations := SomePrincipalPolarizations(P : D:=D);
+//   vprint ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+//   if #polarizations eq 0 then
+//     b := D[1]; e := D[#D];
+//     if (e - b + 1) eq #D then
+//       vprintf ModAbVarRec: "increasing D = %o ", D;
+//       D := [b - #D div 2 .. e + #D div 2];
+//       vprintf ModAbVarRec: "to D = %o\n", D;
+//       vprintf ModAbVarRec: "Finding a polarizations %o...", D;
+//       vtime ModAbVarRec:
+//       polarizations := SomePrincipalPolarizations(P : D:=D);
+//       vprintf ModAbVarRec: "Done, found %o polarizations\n", #polarizations;
+//     end if;
+//   end if;
+//   return polarizations;
+// end intrinsic;
 
 
 
@@ -296,397 +296,327 @@ end intrinsic;
 */
 
 
-intrinsic PossibleQuadraticTwists(C::CrvHyp, euler_factors::UserProgram, BadPrimes: Bound:=200) -> RngIntElt
-{ Find a quadratic twist such that C and it matches the given Euler factors, returns 0 if no quadratic twist is found}
-  vprintf ModAbVarRec: "Find correct quadratic twist...";
-  orderG := #GeometricAutomorphismGroup(C);
-  vprintf ModAbVarRec: "The geometric automorphism group is of size %o.\n", orderG;
-  oktofail := orderG ne 2;
-  disc := Discriminant(C);
-  D := Integers()! (Numerator(disc) * Denominator(disc));
-  badprimes := IndexedSet(PrimeDivisors(D) cat BadPrimes cat [-1]);
-  primes := Sort(SetToSequence(IndexedSet(PrimesUpTo(Bound)) diff badprimes));
-  twistdata := [];
-  splittingdata := [];
-  usedprimes := []; // not used for anything
-  // this could be written without Bound and with a while loop
-  for p in primes do
-
-    // Compute euler factor of the curve
-    vprintf ModAbVarRec: "p = %o\nEuler factor C ", p;
-    vtime ModAbVarRec:
-    efc := EulerFactor(C, p);
-    vprint ModAbVarRec: "Euler factor C = ", Coefficients(efc);
-
-    // Compute euler factor of the original object
-    vprintf ModAbVarRec: "Euler factor original ", p;
-    vtime ModAbVarRec:
-    eff := euler_factors(p);
-    vprint ModAbVarRec: "Euler factor f = ", Coefficients(eff);
-
-
-    efctwist := Evaluate(efc, -Parent(efc).1);
-    if eff notin [efc, efctwist] then
-        require oktofail : Sprintf("is not a local quadratic twist at p=%o\nefc = %o != %o = eff\n C = %o, and #G = %o", p, Eltseq(efc), Eltseq(eff), C, orderG);
-        return [];
-    end if;
-
-    if efc eq efctwist then
-      continue; // we cannot distinguish between either
-    end if;
-
-    Append(~usedprimes, p);
-    if efc eq eff then
-      Append(~twistdata, 0);
-    else
-      Append(~twistdata, 1);
-    end if;
-    Append(~splittingdata, [(KroneckerSymbol(q, p) eq -1) select 1 else 0 : q in badprimes]);
-    if Rank(Matrix(GF(2), splittingdata)) eq #badprimes then
-      break p;
-    end if;
-  end for;
-  M := Transpose(Matrix(GF(2), splittingdata));
-  v := Vector(GF(2), twistdata);
-  vprint ModAbVarRec: badprimes, usedprimes, Rank(M), #badprimes;
-  vprint ModAbVarRec: M;
-  vprint ModAbVarRec: Vector(GF(2), twistdata);
-  k := Nrows(M);
-  solutions := [Eltseq(elt)[1..k] : elt in Kernel(VerticalJoin(M, Matrix(v))) | elt[k + 1] eq 1];
-  vprint ModAbVarRec: "PossibleQuadraticTwists: Done";
-  return [#r gt 0 select &*r else 1
-          where r := [badprimes[i]: i->e in sol | not IsZero(e)]
-    : sol in solutions];
-end intrinsic;
-
-
-intrinsic PossibleQuadraticTwists(C::CrvHyp, f::ModSym : Bound:=200) -> RngIntElt
-{ Find a quadratic twist such that C and f have the same L-function, returns 0 if no quadratic twist is found}
-  euler_factors := function(p)
-    return Reverse(CharpolyOfFrobenius(f, p));
-  end function;
-  return PossibleQuadraticTwists(C, euler_factors, PrimeDivisors(Level(f)) : Bound:=Bound);
-end intrinsic;
-
-
-
-// FIXME, the output might not be a curve, but just igusa invariants over some numberfield
-intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, D:=[-4..4], UpperBound:=12) -> BoolElt, Any
-{
-TODO: add documentation
-}
-
-  procedure InLats(~res, ~Lats, F)
-    L := Lattice(F);
-    d := Determinant(F);
-    // decide if we already seen this lattice
-    if not d in Keys(Lats) then
-      Lats[d] := {L};
-      res := false;
-    else
-      res := L in Lats[d];
-      if not res then
-        Include(~Lats[d], L);
-      end if;
-    end if;
-  end procedure;
-
-  procedure AddToBins(~newbin, ~bins, key, value, compare)
-    placed := false;
-    for y in Keys(bins) do
-      if compare(key,y) then
-        Append(~bins[y], value);
-        placed := true;
-        break y;
-      end if;
-    end for;
-    if not placed then
-      bins[key] := [value];
-    end if;
-    newbin := not placed;
-  end procedure;
-
-  function CompareIgusaCC(x, y)
-    return Abs(Norm(Vector(x) - Vector(y))) lt Universe(x)`epscomp;
-  end function;
-
-  procedure SortResults(~lst)
-    // sort on field
-    // then on curve < Igusa < G2
-    // and then on size
-    function TypeRank(elt)
-      if ISA(Type(elt), Crv) then
-        return 0;
-      end if;
-      assert Type(elt) eq ModTupFldElt; //aka a  vector
-      if #Eltseq(elt) eq 5 then // igusa invariants
-        return 1;
-      end if;
-      return 2;
-    end function;
-    degdisc := [<Degree(R), Discriminant(R), TypeRank(elt), #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
-    positions := [1..#lst];
-    vprintf ModAbVarRec: "UnSorted: %o\n%o\n", degdisc, lst;
-    ParallelSort(~degdisc, ~positions);
-    lst := [* lst[j] : j in positions *];
-    vprintf ModAbVarRec: "Sorted: %o\n%o\n", degdisc, lst;
-  end procedure;
-
-  function DoWeHaveARationalCurve(lst)
-    // returns a boolean
-    return #lst ge 1 and ISA(Type(lst[1]), Crv) and Type(BaseRing(lst[1])) eq FldRat;
-  end function;
 
 
 
 
-  function ReconstructIsogeneousPPs(P, bins, Js)
-    /*
-    We first look at minimal index PP lattices for small polarizations given by SomePolarizations
-    For each PP lattice we:
-      - put them in Bins according to igusa invariants over CC
-      - try to immediately recognize each new igusa invariant over QQ
+// // FIXME, the output might not be a curve, but just igusa invariants over some numberfield
+// intrinsic ReconstructGenus2Curve(f::ModSym : prec:=80, D:=[-4..4], UpperBound:=12) -> BoolElt, Any
+// {
+// TODO: add documentation
+// }
 
-    If we have not succeeded so far, then after colleign all the lattices we:
-      - try to recognize each new igusa invariant over a number field
-      - finally loop over twists and try to match tangent representation
-    */
+//   procedure InLats(~res, ~Lats, F)
+//     L := Lattice(F);
+//     d := Determinant(F);
+//     // decide if we already seen this lattice
+//     if not d in Keys(Lats) then
+//       Lats[d] := {L};
+//       res := false;
+//     else
+//       res := L in Lats[d];
+//       if not res then
+//         Include(~Lats[d], L);
+//       end if;
+//     end if;
+//   end procedure;
 
-    Lats := AssociativeArray(); // Det -> Lats
-    CC := BaseRing(P);
-    QQ := RationalsExtra(Precision(CC));
-    res := [* *];
-    polarizations := SomePolarizations(P : D:=D);
-    for i->polarisation in polarizations do
-      vprintf ModAbVarRec: "Looping over polarizations: %o of %o.\n", i, #polarizations;
-      vprint ModAbVarRec: "Computing isogenous PP lattices...";
-      vtime ModAbVarRec: isogenous := IsogenousPPLattices(polarisation : ProjToPP:=false);
-      detL := [Determinant(elt) : elt in isogenous];
-      ParallelSort(~detL, ~isogenous);
-      for j->F in isogenous do
-        vprintf ModAbVarRec: "Looping over isogenous PP lattices: %o of %o.\n", j, #isogenous;
-        vprintf ModAbVarRec: "Det(L) = %o.\n", Determinant(F);
-        // decide if we already seen this lattice
-        b := false;
-        InLats(~b, ~Lats, F);
-        if b then
-          continue F;
-        end if;
+//   procedure AddToBins(~newbin, ~bins, key, value, compare)
+//     placed := false;
+//     for y in Keys(bins) do
+//       if compare(key,y) then
+//         Append(~bins[y], value);
+//         placed := true;
+//         break y;
+//       end if;
+//     end for;
+//     if not placed then
+//       bins[key] := [value];
+//     end if;
+//     newbin := not placed;
+//   end procedure;
 
-        // Compute new period matrix
-        Pnew := P*Transpose(ChangeRing(F, CC) );
-        try // Reduce might fail
-          taunew := ReduceSmallPeriodMatrix(SmallPeriodMatrix(Pnew));
-        catch e
-          continue F;
-        end try;
-        JCC := IgusaInvariantsG2(taunew : Reduce:=false);
+//   function CompareIgusaCC(x, y)
+//     return Abs(Norm(Vector(x) - Vector(y))) lt Universe(x)`epscomp;
+//   end function;
 
-        AddToBins(~b, ~bins, JCC, <taunew, Pnew, F>, CompareIgusaCC);
+//   procedure SortResults(~lst)
+//     // sort on field
+//     // then on curve < Igusa < G2
+//     // and then on size
+//     function TypeRank(elt)
+//       if ISA(Type(elt), Crv) then
+//         return 0;
+//       end if;
+//       assert Type(elt) eq ModTupFldElt; //aka a  vector
+//       if #Eltseq(elt) eq 5 then // igusa invariants
+//         return 1;
+//       end if;
+//       return 2;
+//     end function;
+//     degdisc := [<Degree(R), Discriminant(R), TypeRank(elt), #StripWhiteSpace(Sprint(Eltseq(elt)))> where R:=BaseRing(elt) : elt in lst];
+//     positions := [1..#lst];
+//     vprintf ModAbVarRec: "UnSorted: %o\n%o\n", degdisc, lst;
+//     ParallelSort(~degdisc, ~positions);
+//     lst := [* lst[j] : j in positions *];
+//     vprintf ModAbVarRec: "Sorted: %o\n%o\n", degdisc, lst;
+//   end procedure;
 
-
-        if not b then // not new
-          continue F;
-        end if;
-        vprint ModAbVarRec: "Recognizing igusa invariants over QQ...";
-        vtime ModAbVarRec: b, J := AlgebraizeElementsExtra(JCC, QQ);
-
-        if not b then // failed to recognize
-          vprint ModAbVarRec: "Could not recognize igusa invariants over QQ\n";
-          continue F;
-        end if;
-
-        Js[JCC] := J;
-        vprintf ModAbVarRec: "Done\n J = %o\n", J;
-        _, _, _, _, J10 := Explode(J);
-        if J10 eq 0 then
-          vprint ModAbVarRec: "We got a product of elliptic curves";
-          vprintf ModAbVarRec: "Recognizing j-invariants...";
-          jpair, _, b, e := AlgebraizedInvariantsG2(taunew, QQ : UpperBound:=UpperBound, type:="j", Reduce:=false);
-          if b then
-            vprintf ModAbVarRec: "Done\n j invariants = %o over %o\n" , jpair, Universe(jpair);
-            Append(~res, Vector(jpair));
-          else
-            vprint ModAbVarRec: e;
-            WriteStderr(e);
-          end if;
-        else
-          C := HyperellipticCurveFromIgusaInvariants(J);
-          vprintf ModAbVarRec: "C = %o\n", C;
-          C := CurveExtra(C : prec := Precision(CC)-10);
-          assert #GeometricHomomorphismRepresentationCC(ChangeRing(PeriodMatrix(C), CC), P) gt 0;
-          Append(~res, C);
-          if BaseRing(C) eq Rationals() then
-            break polarisation;
-          end if;
-        end if;
-      end for;
-    end for;
+//   function DoWeHaveARationalCurve(lst)
+//     // returns a boolean
+//     return #lst ge 1 and ISA(Type(lst[1]), Crv) and Type(BaseRing(lst[1])) eq FldRat;
+//   end function;
 
 
-    SortResults(~res);
-    if DoWeHaveARationalCurve(res) then
-      return res, bins, Js;
-    end if;
-
-    countbin := 0;
-    for JCC->B in bins do
-      countbin +:= 1;
-      vprintf ModAbVarRec: "Looping over isomorphism classes: %o of %o.\n", countbin, #bins;
-      _, _, _, _, J10 := Explode(JCC);
-
-      b, val := IsDefined(Js, JCC);
-
-      if  Abs(J10)^2 lt CC`epscomp
-          or
-          (b and Universe(val) eq Rationals())
-          or
-          #B eq 0
-        then
-        // is not a genus 2 curve
-        // we already tried to tackle this isomorphism class via invariants
-        // no twists
-        continue JCC;
-      end if;
 
 
-      vprint ModAbVarRec: "Recognizing igusa invariants over a number field...";
-      try
-        vtime ModAbVarRec:
-        L, J, _ := NumberFieldExtra(JCC, QQ : UpperBound:=UpperBound);
-        b := true;
-      catch e
-        b := false;
-        vprint CurveRec : "Failed to algebraize igusa invariants.";
-        WriteStderr(e);
-      end try;
+//   function ReconstructIsogeneousPPs(P, bins, Js)
+//     /*
+//     We first look at minimal index PP lattices for small polarizations given by SomePolarizations
+//     For each PP lattice we:
+//       - put them in Bins according to igusa invariants over CC
+//       - try to immediately recognize each new igusa invariant over QQ
 
-      if b then
-        vprintf ModAbVarRec: "Done\n J = %o over %o\n" , J, L;
-        Js[JCC] := J;
-        if L cmpeq Rationals() then
-          vprint ModAbVarRec: "Constructing curve...";
-          C := HyperellipticCurveFromIgusaInvariants(J);
-          vprint ModAbVarRec: "C = %o\n", C;
-          C := CurveExtra(C : prec := Precision(CC)-10);
-          assert #GeometricHomomorphismRepresentationCC(ChangeRing(PeriodMatrix(C), CC), P) gt 0;
-          Append(~res, C);
-          if BaseRing(C) eq Rationals() then
-            break JCC;
-          end if;
-          continue JCC; // no point on looping over twists over a numberfield
-        else
-          // we will still try to loop over twists and match tagent representation
-          Append(~res, Vector(J));
-        end if;
-      end if;
+//     If we have not succeeded so far, then after colleign all the lattices we:
+//       - try to recognize each new igusa invariant over a number field
+//       - finally loop over twists and try to match tangent representation
+//     */
 
-      detB := [Determinant(elt[3]) : elt in B];
-      idxB := [i : i in [1..#B]];
-      ParallelSort(~detB, ~idxB);
+//     Lats := AssociativeArray(); // Det -> Lats
+//     CC := BaseRing(P);
+//     QQ := RationalsExtra(Precision(CC));
+//     res := [* *];
+//     polarizations := SomePolarizations(P : D:=D);
+//     for i->polarisation in polarizations do
+//       vprintf ModAbVarRec: "Looping over polarizations: %o of %o.\n", i, #polarizations;
+//       vprint ModAbVarRec: "Computing isogenous PP lattices...";
+//       vtime ModAbVarRec: isogenous := IsogenousPPLattices(polarisation : ProjToPP:=false);
+//       detL := [Determinant(elt) : elt in isogenous];
+//       ParallelSort(~detL, ~isogenous);
+//       for j->F in isogenous do
+//         vprintf ModAbVarRec: "Looping over isogenous PP lattices: %o of %o.\n", j, #isogenous;
+//         vprintf ModAbVarRec: "Det(L) = %o.\n", Determinant(F);
+//         // decide if we already seen this lattice
+//         b := false;
+//         InLats(~b, ~Lats, F);
+//         if b then
+//           continue F;
+//         end if;
 
-      //for i->idx in idxB do
-      for i->tuple in B do
-        //tuple := B[idx];
-        vprintf ModAbVarRec: "Looping over twists: %o of %o.\n", i, #B;
-        _, Pnew, F := Explode(tuple);
-        vprintf ModAbVarRec: "Det(Lattice) = %o.\n", Determinant(F);
-        try
-          vprint ModAbVarRec: "Reconstructing curve by matching tangent representation...";
-          // over a number field this is sometimes suprisingly successful
-          // and if the igusa invariants are over a NumberField there is not much u
-          vtime ModAbVarRec:
-          C, _, b := ReconstructGenus2Curve(Pnew, QQ : UpperBound:=UpperBound);
-          if b then
-            vprintf ModAbVarRec: "Done\n C = %o\n" , C;
-          else
-            vprint ModAbVarRec: "ReconstructCurveG2 was not successful";
-          end if;
-        catch e
-          b := false;
-          vprint ModAbVarRec: "ReconstructCurveG2: Failed :(";
-          WriteStderr(e);
-        end try;
-        if b then
-          igusa := IgusaInvariants(C);
-          ratIgusa := &and[elt in Rationals() : elt in igusa];
-          // try to descend C
-          if Type(BaseRing(C)) ne FldRat and ratIgusa then
-            C := HyperellipticCurveFromIgusaInvariants(igusa);
-          end if;
-          C := CurveExtra(C : prec := Precision(CC)-10);
-          assert #GeometricHomomorphismRepresentationCC(ChangeRing(PeriodMatrix(C), CC), P) gt 0;
-          Append(~res, C);
-          if BaseRing(C) eq Rationals() then
-            break JCC;
-          end if;
-        end if;
-      end for; // loop over elements of a bin
-    end for; // loop over bins
-    return res, bins, Js;
-  end function;
+//         // Compute new period matrix
+//         Pnew := P*Transpose(ChangeRing(F, CC) );
+//         try // Reduce might fail
+//           taunew := ReduceSmallPeriodMatrix(SmallPeriodMatrix(Pnew));
+//         catch e
+//           continue F;
+//         end try;
+//         JCC := IgusaInvariantsG2(taunew : Reduce:=false);
+
+//         AddToBins(~b, ~bins, JCC, <taunew, Pnew, F>, CompareIgusaCC);
 
 
-  // The work starts here:
-  bins := AssociativeArray(); // JCC -> <reduced small period matrix, big period matrix?
-  Js := AssociativeArray(); // JCC -> JQbar
-  res := [* *];
+//         if not b then // not new
+//           continue F;
+//         end if;
+//         vprint ModAbVarRec: "Recognizing igusa invariants over QQ...";
+//         vtime ModAbVarRec: b, J := AlgebraizeElementsExtra(JCC, QQ);
 
-  // just use the modular forms as potential differential forms on the curve
-  b, C := ReconstructModularCurve(f);
-  if b then
-    res := [* C *];
-  end if;
+//         if not b then // failed to recognize
+//           vprint ModAbVarRec: "Could not recognize igusa invariants over QQ\n";
+//           continue F;
+//         end if;
 
-  if not DoWeHaveARationalCurve(res) then
-    P := PeriodMatrix(f : prec:=prec);
-    vprint ModAbVarRec: "Looping over isogenous PP lattices with original period matrix";
-    vtime ModAbVarRec:
-    newres, bins, Js := ReconstructIsogeneousPPs(P, bins, Js);
-    res cat:= newres;
-    SortResults(~res);
-    vprint ModAbVarRec: "Done looping over SomeIsogenousPrincipallyPolarized with original period matrix";
-  end if;
-  if not DoWeHaveARationalCurve(res) then
-    P2, G2 := PeriodMatrixWithMaximalOrder(P);
-    // if P == P2, then P was already maximal order
-    if P ne P2 then
-      vprint ModAbVarRec: "Looping over isogenous PP lattices with maximal order period matrix";
-      // drop previous isomorphism classes, but keep the buckets
-      for k in Keys(bins) do
-        bins[k] := [];
-      end for;
-      vtime ModAbVarRec:
-      newres, bins, Js := ReconstructIsogeneousPPs(P, bins, Js);
-      res cat:= newres;
-      SortResults(~res);
-      vprint ModAbVarRec: "Done looping over SomeIsogenousPrincipallyPolarized with maximal order period matrix";
-    else
-      vprint ModAbVarRec: "Order already maximal";
-    end if;
-  end if;
+//         Js[JCC] := J;
+//         vprintf ModAbVarRec: "Done\n J = %o\n", J;
+//         _, _, _, _, J10 := Explode(J);
+//         if J10 eq 0 then
+//           vprint ModAbVarRec: "We got a product of elliptic curves";
+//           vprintf ModAbVarRec: "Recognizing j-invariants...";
+//           jpair, _, b, e := AlgebraizedInvariantsG2(taunew, QQ : UpperBound:=UpperBound, type:="j", Reduce:=false);
+//           if b then
+//             vprintf ModAbVarRec: "Done\n j invariants = %o over %o\n" , jpair, Universe(jpair);
+//             Append(~res, Vector(jpair));
+//           else
+//             vprint ModAbVarRec: e;
+//             WriteStderr(e);
+//           end if;
+//         else
+//           C := HyperellipticCurveFromIgusaInvariants(J);
+//           vprintf ModAbVarRec: "C = %o\n", C;
+//           C := CurveExtra(C : prec := Precision(CC)-10);
+//           assert #GeometricHomomorphismRepresentationCC(ChangeRing(PeriodMatrix(C), CC), P) gt 0;
+//           Append(~res, C);
+//           if BaseRing(C) eq Rationals() then
+//             break polarisation;
+//           end if;
+//         end if;
+//       end for;
+//     end for;
 
-  vprintf ModAbVarRec: "all the curves %o\m", res;
-  if DoWeHaveARationalCurve(res) then
-    C := res[1];
-    vprintf ModAbVarRec: "Found curve %o\n", C;
-    D := PossibleQuadraticTwists(C, f);
-    vprintf ModAbVarRec: "Possible twisted by %o\n", D;
-    if #D eq 1 then
-      C := QuadraticTwist(C, D[1]);
-    else
-      e := "The curve has more than quadratic twists";
-      vprint ModAbVarRec: e;
-      WriteStderr(e);
-    end if;
-    vtime ModAbVarRec:
-    C := ReducedMinimalWeierstrassModel(C);
-    return true, C;
-  elif #res gt 0 then
-    return true, res[1];
-  end if;
-  return false, _;
-end intrinsic;
+
+//     SortResults(~res);
+//     if DoWeHaveARationalCurve(res) then
+//       return res, bins, Js;
+//     end if;
+
+//     countbin := 0;
+//     for JCC->B in bins do
+//       countbin +:= 1;
+//       vprintf ModAbVarRec: "Looping over isomorphism classes: %o of %o.\n", countbin, #bins;
+//       _, _, _, _, J10 := Explode(JCC);
+
+//       b, val := IsDefined(Js, JCC);
+
+//       if  Abs(J10)^2 lt CC`epscomp
+//           or
+//           (b and Universe(val) eq Rationals())
+//           or
+//           #B eq 0
+//         then
+//         // is not a genus 2 curve
+//         // we already tried to tackle this isomorphism class via invariants
+//         // no twists
+//         continue JCC;
+//       end if;
+
+
+//       vprint ModAbVarRec: "Recognizing igusa invariants over a number field...";
+//       try
+//         vtime ModAbVarRec:
+//         L, J, _ := NumberFieldExtra(JCC, QQ : UpperBound:=UpperBound);
+//         b := true;
+//       catch e
+//         b := false;
+//         vprint CurveRec : "Failed to algebraize igusa invariants.";
+//         WriteStderr(e);
+//       end try;
+
+//       if b then
+//         vprintf ModAbVarRec: "Done\n J = %o over %o\n" , J, L;
+//         Js[JCC] := J;
+//         if L cmpeq Rationals() then
+//           vprint ModAbVarRec: "Constructing curve...";
+//           C := HyperellipticCurveFromIgusaInvariants(J);
+//           vprint ModAbVarRec: "C = %o\n", C;
+//           C := CurveExtra(C : prec := Precision(CC)-10);
+//           assert #GeometricHomomorphismRepresentationCC(ChangeRing(PeriodMatrix(C), CC), P) gt 0;
+//           Append(~res, C);
+//           if BaseRing(C) eq Rationals() then
+//             break JCC;
+//           end if;
+//           continue JCC; // no point on looping over twists over a numberfield
+//         else
+//           // we will still try to loop over twists and match tagent representation
+//           Append(~res, Vector(J));
+//         end if;
+//       end if;
+
+//       detB := [Determinant(elt[3]) : elt in B];
+//       idxB := [i : i in [1..#B]];
+//       ParallelSort(~detB, ~idxB);
+
+//       //for i->idx in idxB do
+//       for i->tuple in B do
+//         //tuple := B[idx];
+//         vprintf ModAbVarRec: "Looping over twists: %o of %o.\n", i, #B;
+//         _, Pnew, F := Explode(tuple);
+//         vprintf ModAbVarRec: "Det(Lattice) = %o.\n", Determinant(F);
+//         try
+//           vprint ModAbVarRec: "Reconstructing curve by matching tangent representation...";
+//           // over a number field this is sometimes suprisingly successful
+//           // and if the igusa invariants are over a NumberField there is not much u
+//           vtime ModAbVarRec:
+//           C, _, b := ReconstructGenus2Curve(Pnew, QQ : UpperBound:=UpperBound);
+//           if b then
+//             vprintf ModAbVarRec: "Done\n C = %o\n" , C;
+//           else
+//             vprint ModAbVarRec: "ReconstructCurveG2 was not successful";
+//           end if;
+//         catch e
+//           b := false;
+//           vprint ModAbVarRec: "ReconstructCurveG2: Failed :(";
+//           WriteStderr(e);
+//         end try;
+//         if b then
+//           igusa := IgusaInvariants(C);
+//           ratIgusa := &and[elt in Rationals() : elt in igusa];
+//           // try to descend C
+//           if Type(BaseRing(C)) ne FldRat and ratIgusa then
+//             C := HyperellipticCurveFromIgusaInvariants(igusa);
+//           end if;
+//           C := CurveExtra(C : prec := Precision(CC)-10);
+//           assert #GeometricHomomorphismRepresentationCC(ChangeRing(PeriodMatrix(C), CC), P) gt 0;
+//           Append(~res, C);
+//           if BaseRing(C) eq Rationals() then
+//             break JCC;
+//           end if;
+//         end if;
+//       end for; // loop over elements of a bin
+//     end for; // loop over bins
+//     return res, bins, Js;
+//   end function;
+
+
+//   // The work starts here:
+//   bins := AssociativeArray(); // JCC -> <reduced small period matrix, big period matrix?
+//   Js := AssociativeArray(); // JCC -> JQbar
+//   res := [* *];
+
+//   // just use the modular forms as potential differential forms on the curve
+//   b, C := ReconstructModularCurve(f);
+//   if b then
+//     res := [* C *];
+//   end if;
+
+//   if not DoWeHaveARationalCurve(res) then
+//     P := PeriodMatrix(f : prec:=prec);
+//     vprint ModAbVarRec: "Looping over isogenous PP lattices with original period matrix";
+//     vtime ModAbVarRec:
+//     newres, bins, Js := ReconstructIsogeneousPPs(P, bins, Js);
+//     res cat:= newres;
+//     SortResults(~res);
+//     vprint ModAbVarRec: "Done looping over SomeIsogenousPrincipallyPolarized with original period matrix";
+//   end if;
+//   if not DoWeHaveARationalCurve(res) then
+//     P2, G2 := PeriodMatrixWithMaximalOrder(P);
+//     // if P == P2, then P was already maximal order
+//     if P ne P2 then
+//       vprint ModAbVarRec: "Looping over isogenous PP lattices with maximal order period matrix";
+//       // drop previous isomorphism classes, but keep the buckets
+//       for k in Keys(bins) do
+//         bins[k] := [];
+//       end for;
+//       vtime ModAbVarRec:
+//       newres, bins, Js := ReconstructIsogeneousPPs(P, bins, Js);
+//       res cat:= newres;
+//       SortResults(~res);
+//       vprint ModAbVarRec: "Done looping over SomeIsogenousPrincipallyPolarized with maximal order period matrix";
+//     else
+//       vprint ModAbVarRec: "Order already maximal";
+//     end if;
+//   end if;
+
+//   vprintf ModAbVarRec: "all the curves %o\m", res;
+//   if DoWeHaveARationalCurve(res) then
+//     C := res[1];
+//     vprintf ModAbVarRec: "Found curve %o\n", C;
+//     D := PossibleQuadraticTwists(C, f);
+//     vprintf ModAbVarRec: "Possible twisted by %o\n", D;
+//     if #D eq 1 then
+//       C := QuadraticTwist(C, D[1]);
+//     else
+//       e := "The curve has more than quadratic twists";
+//       vprint ModAbVarRec: e;
+//       WriteStderr(e);
+//     end if;
+//     vtime ModAbVarRec:
+//     C := ReducedMinimalWeierstrassModel(C);
+//     return true, C;
+//   elif #res gt 0 then
+//     return true, res[1];
+//   end if;
+//   return false, _;
+// end intrinsic;
 
 
 
