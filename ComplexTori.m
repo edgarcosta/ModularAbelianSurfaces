@@ -143,7 +143,7 @@ intrinsic RationalPrincipalPolarizations(f::ModSym : prec:=80, Quotient:=false, 
   pps := PrincipalPolarizations(Omega, SelfDualHoms);
   // Note: NarrowClassNumber always returns the narrow class number of the maximal order O
   if MaximalEnd and NarrowClassNumber(HeckeEigenvalueRing(f)) eq 1 then
-    assert #pps gt 0 or true;
+    assert #pps gt 0;
   end if;
   return pps;
 end intrinsic;

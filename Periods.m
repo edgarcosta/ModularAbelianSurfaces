@@ -66,7 +66,7 @@ intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false)
 end intrinsic;
 
 intrinsic PeriodMatrixSubMagma(f::ModSym : prec:=80) -> ModMatFldElt
-  { Compute the period matrix associated to f A_f^sub via Magma }
+  { Compute the period matrix associated to f A_f^sub via Magma's computation of integral homology }
   _, ncoeffs, _ := PeriodMappingMatrix(f : prec:=prec);
   P := Matrix(Periods(f, ncoeffs)); // this should use the cached map
   assert Precision(BaseRing(P)) gt prec;
