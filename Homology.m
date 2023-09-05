@@ -162,7 +162,6 @@ intrinsic HeckeAlgebraIntegralBasis(f : Quotient:=false, MaximalEnd:=false) -> S
   end if;
 end intrinsic;
 
-//TODO is this a functor?
 intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqEnum[AlgMatElt]
 {
   Retun the isogeny A -> A_max where End(A_max) := MaximalOrder(End(A) = HeckeAlgebraIntegralBasis(A) ) and A is the subvariety (or quotient) of J_0(N) associated to f, and the HeckeAlgebraIntegralBasis
