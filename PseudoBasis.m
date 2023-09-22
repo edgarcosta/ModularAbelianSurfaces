@@ -37,8 +37,8 @@ intrinsic PseudoBasis(R::AlgMatElt[RngInt] : TryPrincipalize := false) -> SeqEnu
 
   CI := [CoefficientIdeals(E)[k] : k in basind];
   // convert from K-linear combo back to ZZ-linear combo, can this be described
-  // more simply by a matrix calculation?  
-  Lambdabas := 
+  // more simply by a matrix calculation?
+  Lambdabas :=
     [&+[&+[Eltseq(K!T[k][i])[j]*(R^(j-1))[i] : j in [1..d]] : i in [1..dn]] : k in basind];
   assert #Lambdabas eq n;
   if TryPrincipalize then
@@ -49,7 +49,7 @@ intrinsic PseudoBasis(R::AlgMatElt[RngInt] : TryPrincipalize := false) -> SeqEnu
         CI[k] := 1*ZZK;
         Lambdabas[k] := ChangeRing(Lambdabas[k],Rationals())*&+[Eltseq(K!nu)[j]*RQQ^(j-1) : j in [1..d]];
       end if;
-    end for;  
+    end for;
   end if;
   return [<CI[k], Lambdabas[k]> : k in [1..n]];
 end intrinsic;
@@ -60,10 +60,10 @@ CheckPseudoBasis := function(P, R);
   d := Degree(K);
   assert MinimalPolynomial(R) eq MinimalPolynomial(K.1);
   ZZspan := [];
-  RQQ := ChangeRing(R,Rationals());
+  RQQ := ChangeRing(R, Rationals());
   for aav in P do
     aa := aav[1];
-    v := ChangeRing(aav[2],Rationals());
+    v := ChangeRing(aav[2], Rationals());
     ZZspan cat:= [Parent(aav[2]) | v*&+[Eltseq(K!beta)[j]*RQQ^(j-1) : j in [1..d]]
                 : beta in Basis(aa)];
   end for;
@@ -72,12 +72,10 @@ end function;
 
 /*
 R := Matrix(4, 4, [ -3, -2, 0, 0, -2, 2, 0, 0, -16, -6, 3, -1, -4, -4, 2, -4 ]);
-P := PseudoBasis(R);
-P;
-CheckPseudoBasis(P, R : TryPrincipalize := true);
+P := PseudoBasis(R  : TryPrincipalize := true);
+CheckPseudoBasis(P, R);
 
 R := Matrix(2, 2, [ 0, 1, 15, 0 ]);
 P := PseudoBasis(R);
-P;
 CheckPseudoBasis(P, R);
 */
