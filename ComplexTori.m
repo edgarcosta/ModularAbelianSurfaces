@@ -80,16 +80,19 @@ intrinsic PrincipalMinors(M::Mtrx) -> SeqEnum[FldElt]
   return [Minor(M, I, I) where I := [j..n] : j  in [1..n]] where n:=Nrows(M);
 end intrinsic;
 
+function PfaffianPolarization(Es)
+  n := #Es;
+  R := PolynomialRing(Integers(), n);
+  ER := &+[R.i * ChangeRing(Ei, R) : i->Ei in Es];
+  return Pfaffian(ER);
+end function;
 
-function PfaffianAndMinors(Es, P)
+function MinorsPolarization(Es, P)
   CC<I> := BaseRing(P);
   n := #Es;
   R := PolynomialRing(Integers(), n);
   RCC := PolynomialRing(CC, n);
-
-
   ER := &+[R.i * ChangeRing(Ei, R) : i->Ei in Es];
-  pf := Pfaffian(ER);
   PRCC := ChangeRing(P, RCC);
   PRCC_star := ChangeRing(Conjugate(Transpose(P)), RCC);
   // ERCC_inverse := ChangeRing(AdjugateMatrix(ER), RCC);
@@ -102,31 +105,54 @@ function PfaffianAndMinors(Es, P)
     coeff, mon := CoefficientsAndMonomials(f);
     return &+[Real(c)*RRR!mon[i] : i->c in coeff];
   end function;
-  return pf, [RealPolynomial(elt) : elt in minors];
+  return [RealPolynomial(elt) : elt in minors];
 end function;
 
 
-intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> SeqEnum[AlgMatElt]
-{
-Return all principal polarizations on Omega in the span of B := [B_1, B_2] up to automorphism, where Omega is the period matrix of A, and B_i are self-dual homomorphisms A to A^v linearly independent.
-
-}
-  // TODO: is somewhat suboptimal to compute Omega, if there are no solutions for the conic equation
+function PfaffianSolutions(B, d)
   n := #B;
-  require n eq 2: Sprintf("Expected #B = 2, got #B = %o. We have only implemented for combinations of two polarizations, as we rely on computing integral points on a conic in A^2", n);
-  pf, minors := PfaffianAndMinors(B, Omega);
-  CC := BaseRing(Parent(minors[1]));
+  pf := PfaffianPolarization(B);
   // extract conic
   abc := [MonomialCoefficient(pf, [2-i,i]) : i in [0..2]];
-  // extract combinations with determinant 1
-  sols := IntegralPointsConic(abc, [1,-1]);
+  // extract combinations with determinant d^2
+  sols := IntegralPointsConic(abc, [d, -d]);
   solutions := &cat [SetToSequence(elt) : elt in sols];
-  // for each connic there are 2 connected components, the action by tau moves along component, and the action by -1 swaps them
+  // for each conic there are 2 connected components, the action by tau moves along component, and the action by -1 swaps them
   // tau is (the square of) the fundamental unit (if its norm is -1) with both embeddings positive
   solutions cat:= [[-elt[1], -elt[2]] : elt in solutions];
+  return solutions;
+end function;
+
+
+
+intrinsic PrincipalPolarizations(Omega::UserProgram, B::SeqEnum[AlgMatElt]) -> SeqEnum[AlgMatElt]
+{
+Return all principal polarizations on Omega() in the span of B := [B_1, B_2] up to automorphism, where Omega is the period matrix of A, and B_i are self-dual homomorphisms A to A^v linearly independent.
+  The purpuse of passing a function is to only compute Omega if necessary.
+
+}
+  n := #B;
+  require n eq 2: Sprintf("Expected #B = 2, got #B = %o. We have only implemented for combinations of two polarizations, as we rely on computing integral points on a conic in A^2", n);
+
+
+  solutions := PfaffianSolutions(B, 1);
+  if #solutions eq 0 then
+    return [];
+  end if;
+
+  minors := MinorsPolarization(B, Omega());
+  CC := BaseRing(Parent(minors[1]));
+
   // the positivity condition is picking one of the 4 connected components of the two conics
   ppols := [&+[ coord[i]*B[i] : i in [1..n] ] : coord in solutions | &and[ Evaluate(m, coord) gt CC`epsinv : m in minors]];
   return [Matrix(Integers(), elt) : elt in ppols];
+end intrinsic;
+
+intrinsic PrincipalPolarizations(Omega::ModMatFldElt, B::SeqEnum[AlgMatElt]) -> SeqEnum[AlgMatElt]
+{
+Return all principal polarizations on Omega() in the span of B := [B_1, B_2] up to automorphism, where Omega is the period matrix of A, and B_i are self-dual homomorphisms A to A^v linearly independent.
+}
+  return PrincipalPolarizations(func<|Omega>, B);
 end intrinsic;
 
 intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum[AlgMAtElt] 
@@ -139,7 +165,8 @@ intrinsic RationalPrincipalPolarizations(f::ModSym : prec:=80, Quotient:=false, 
   All rational principal polarizations for Af (or quotient) of J_0(N) associated to f.
   If MaximalEnd is true, then it is replaced by the isogenous variety such that End(Af) is maximal.
 }
-  Omega := PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  // so we delay the computation of the Period matrix
+  Omega := func<|PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd)>;
   SelfDualHoms := RationalSelfDualHomomorphisms(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   pps := PrincipalPolarizations(Omega, SelfDualHoms);
   // Note: NarrowClassNumber always returns the narrow class number of the maximal order O
