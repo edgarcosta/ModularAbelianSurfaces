@@ -1,3 +1,5 @@
+declare verbose ModAbVarRec, 3;
+
 intrinsic PossibleQuadraticTwists(C::CrvHyp, euler_factors::UserProgram, BadPrimes: Bound:=200) -> RngIntElt
 { Find a quadratic twist such that C and it matches the given Euler factors, returns 0 if no quadratic twist is found}
   vprintf ModAbVarRec: "Find correct quadratic twist...";
@@ -111,7 +113,7 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
   vprintf ModAbVarRec: "Possible twisted by %o\n", D;
   if #D eq 1 then
     C := QuadraticTwist(C, D[1]);
-    return true, ReducedMinimalWeierstrassModel(C), _;
+    return true, ReducedMinimalWeierstrassModel(C), "";
   else
     return false, J, "The curve is off by more than quadratic twists";
   end if;
@@ -144,25 +146,11 @@ intrinsic RationalGenus2Curves(f::ModSym : prec:=80, Quotient:=false, MaximalEnd
         vprint ModAbVarRec : "RationalGenus2Curves: found curve!";
         vprintf ModAbVarRec: "C = %o\n", C;
         if OnlyOne then
-          return res;
+          break;
         end if;
       end if;
   end for;
-  return res;
 
-  // sorting doesnt really make sense anymore
-  vprint ModAbVarRec : "RationalGenus2Curves: sorting results";
-  // no curves were found
-  if #res eq 0 then
-    return true, [], [], _;
-  else
-    for r in res do
-      if "twists" in r[3] then
-        return false, r[1], r[2], r[3];
-      end if;
-    end for;
-    // no twist has been mentioned
-    return false, r[1], r[2], r[3] where r := res[1];
-  end if;
+  return res;
 end intrinsic;
 
