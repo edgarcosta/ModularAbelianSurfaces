@@ -2,6 +2,85 @@
 // in particular the number of Fourier coefficients is adaptive and
 // and uses IntegralHomology(f::ModSym) instead of calling the magma builtin IntegralHomology(A::ModAbVar)
 
+import !"Geometry/ModSym/analytic.m" : PeriodGenerators;
+
+function GoodPeriodGenerators(f : tries:=50)
+  // Stein: "extremely important to choose γ in Proposition 3.57 with d small, otherwise the series will converge very slowly."
+  ds := [];
+
+  // we need to waste one, so that SetSeed works
+  _ := PeriodGenerators(f, true);
+  delete f`PeriodGens;
+  for _ in [1..tries] do
+    seed, step := GetSeed();
+    // compute f`PeriodGens
+    _, fast := PeriodGenerators(f, true);
+    if not fast then delete f`PeriodGens; continue; end if;
+    assert assigned f`PeriodGens;
+    Append(~ds, <Max([elt[2,4] : elt in f`PeriodGens]), seed, step>); // elt = [a,b,c,d]
+    delete f`PeriodGens;
+  end for;
+  vprint ModAbVarRec: "GoodPeriodGenerators: ds found", {* elt[1] : elt in ds *};
+  d, seed, step := Explode(Min(ds));
+  SetSeed(seed, step);
+  _, fast := PeriodGenerators(f, true);
+  assert fast and d eq Max([elt[2,4] : elt in f`PeriodGens]);
+  return d;
+end function;
+
+
+function bisection(f, a, b)
+  if b cmpeq Infinity then
+     assert f(a) lt 0;
+     b := a;
+     while f(b) lt 0 do
+        b *:= 2;
+     end while;
+  end if;
+  if b - a le 1 then
+     return b;
+  end if;
+
+  c := (a + b) div 2;
+  if f(c) lt 0 then
+     return $$(f, c, b);
+  else
+     return $$(f, a, c);
+  end if;
+end function;
+
+
+// compute a upper bound on the number of coefficients in the q-expansion
+// so that all digits are correct
+function BoundNumberOfCoefficients(f, d, prec)
+  // L(f,1)(1+eps) = 0
+  eps := 1;
+  if LRatio(f, 1) eq 0 then
+    eps := -1;
+  end if;
+  N := Level(f);
+  q := Exp(- 2 * Pi(RealField()) / Sqrt(N));
+  qd := q^(1/d);
+  //prec := Precision(GetDefaultRealField());
+  err := 10^-prec;
+  Mf := Matrix([pi_f(b) : b in Basis(f)]) where pi_f := PeriodMapping(f, 50);
+  Mfabs := [Abs(elt) : elt in Eltseq(Mf)];
+  eps := ComplexFieldExtra(prec)`epscomp;
+  min_entry := Min([elt : elt in Mfabs | elt gt eps]);
+  /*
+  We are summing
+    ((e-1)*q^n + qd^n*(Exp(2*PI*i*n*b/d)-e*Exp(2*PI*i*n*c/d))) an/n
+  |Exp(2*PI*i*n*b/d)-e*Exp(2*PI*i*n*c/d))| <= 2
+  |an| < d(n) sqrt(n)
+  d(n) < Exp(Log(2)Log(n)/(Log(Log(n)) - 1.3918))
+  */
+  g := func<n|
+    err - min_entry*Abs((eps - 1) * q^n /(1 - q) + 2 * qd^n /(1 - qd))*
+    Exp(Log(2)*Log(n)/(Log(Log(n)) - 1.3918))
+  >;
+  return bisection(g, 2, Infinity);
+end function;
+
 intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, FldElt
   { Compute the normalized period matrix associated to f }
   // clear cache
@@ -25,27 +104,45 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
     return ChangeRing(Matrix([pi_f(b) : b in B]), CC) where pi_f := PeriodMapping(f, ncoeffs);
   end function;
 
-
-  // before we defaulted to this guess with the first 2 replaced by 20
-  ncoeffs := 0;
-  ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
-  ncoeffs +:= 3*ncoeffs_inc;
-  P0 := matrix_helper(ncoeffs);
-  ncoeffs +:= ncoeffs_inc;
-  P1 := matrix_helper(ncoeffs);
-  // P0 and P1 live in rings with extra_prec
-  // this checks if they agree up to prec
-  t, e := AlmostEqualMatrix(P0, P1);
-  while not t do
-    // FIXME: we could do this much better
-    // we could check that the errors are getting smaller and we could even estimate how much we should increase the number of coefficients
-    vprint ModAbVarRec: Sprintf("Current error: %o, by using ncoeffs = %o", ComplexField(8)!e, ncoeffs);
-    P0 := P1;
-    ncoeffs +:= ncoeffs_inc;
+  k  := Weight(f);
+  fast := (Level(f) gt 1) and (k mod 2 eq 0)
+         and IsTrivial(DirichletCharacter(f))
+         and IsScalar(AtkinLehner(f,Level(f)));
+  if fast then
+    // Stein: "extremely important to choose γ in Proposition 3.57 with d small, otherwise the series will converge very slowly."
+    d := GoodPeriodGenerators(f);
+  end if;
+  // for k = 2 we can easily compute an upper bound on the number of fourier coefficients necessary
+  if fast and k eq 2 then
+    ncoeffs := BoundNumberOfCoefficients(f, d, prec);
+    vprint ModAbVarRec: Sprintf("target ncoeffs = %o", ncoeffs);
+    P0 := matrix_helper(ncoeffs - Min(100, ncoeffs div 10));
     P1 := matrix_helper(ncoeffs);
     t, e := AlmostEqualMatrix(P0, P1);
-    assert ncoeffs lt 50*ncoeffs_inc; // sanity check that we are converging
-  end while;
+    assert t;
+  else
+    ncoeffs := 0;
+    // FIXME this guess comes from weight 2
+    // before we defaulted to this guess with the first 2 replaced by 20
+    ncoeffs_inc := Ceiling(2*Sqrt(Level(f))*Log(10)*prec/(2*Pi(ComplexField())));
+    ncoeffs +:= 3*ncoeffs_inc;
+    P0 := matrix_helper(ncoeffs);
+    ncoeffs +:= ncoeffs_inc;
+    P1 := matrix_helper(ncoeffs);
+    // P0 and P1 live in rings with extra_prec
+    // this checks if they agree up to prec
+    t, e := AlmostEqualMatrix(P0, P1);
+    while not t do
+      // FIXME: we could do this much better
+      // we could check that the errors are getting smaller and we could even estimate how much we should increase the number of coefficients
+      vprint ModAbVarRec: Sprintf("Current error: %o, by using ncoeffs = %o", ComplexField(8)!e, ncoeffs);
+      P0 := P1;
+      ncoeffs +:= ncoeffs_inc;
+      P1 := matrix_helper(ncoeffs);
+      t, e := AlmostEqualMatrix(P0, P1);
+      assert ncoeffs lt 50*ncoeffs_inc; // sanity check that we are converging
+    end while;
+  end if;
   vprint ModAbVarRec: Sprintf("Final error: %o", ComplexField(8)!e);
   vprint ModAbVarRec: Sprintf("Final ncoeffs: %o", ncoeffs);
   P1 := ChangeRing(P1, ComplexFieldExtra(prec));
