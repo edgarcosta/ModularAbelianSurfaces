@@ -55,6 +55,7 @@ function Core(label, prec : debug := false);
       end try;
     end if;
 
+    localres_fromsub := [* *];
     for elt in localres do
       b, isog, C, e := Explode(elt);
       isogeny_from_sub := R*isog;
@@ -62,8 +63,9 @@ function Core(label, prec : debug := false);
         // we found a curve, we go home early
         return b, <isogeny_from_sub, C>;
       end if;
-      Append(~res, <quosat, isogeny_from_sub, C, e>);
+      Append(~localres_fromsub, <isogeny_from_sub, C, e>);
     end for;
+    Append(~res, <quosat, localres_fromsub>);
   end for;
   return false, res;
 end function;
@@ -82,7 +84,7 @@ function WriteOutput(label, elt)
 end function;
 
 b, res := Core(label, prec : debug:= assigned debug);
-print WriteOutput(label, res);
+WriteOutput(label, res);
 
 exit 0;
 
