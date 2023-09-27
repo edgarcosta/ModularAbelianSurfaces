@@ -9,9 +9,15 @@ prec := StringToInteger(prec);
 start := Time();
 
 if assigned outfile then
-  if label in {elt[1] : elt in getrecs(outfile)} then
-    exit 0;
-  end if;
+    try
+      labels := {elt[1] : elt in getrecs(outfile)};
+    catch e
+      WriteStderr(e);
+      labels := {};
+    end try;
+    if label in labels then
+      exit 0;
+    end if;
 end if;
 
 if assigned verbose then
@@ -75,12 +81,8 @@ function WriteOutput(label, elt)
 end function;
 
 b, res := Core(label, prec : debug:= assigned debug);
+print WriteOutput(label, res);
 
-
-
-
-
-print WriteOutput(res);
 exit 0;
 
 
