@@ -1,9 +1,18 @@
 AttachSpec("~/projects/CHIMP/CHIMP.spec");
-AttachSpec("~/projects/ModularCurves/abelian-varieties/spec");
+AttachSpec("~/projects/ModularAbelianSurfaces/spec");
+
+SetNthreads(1);
 
 s := Split(input, ":");
 label := s[1];
 prec := StringToInteger(prec);
+start := Time();
+
+if assigned outfile then
+  if label in {elt in getrecs(outfile)} then
+    exit 0;
+  end if;
+end if;
 
 if assigned verbose then
   try
@@ -13,6 +22,8 @@ if assigned verbose then
   end try;
   SetVerbose("ModAbVarRec", verbose);
   SetVerbose("CurveRec", verbose);
+  SetVerbose("HomologyModularSymbols", verbose);
+  SetVerbose("ModularSymbols", 3);
 end if;
 if assigned debug then
   SetDebugOnError(true);
@@ -36,28 +47,38 @@ function Core(label, prec : debug := false);
         continue;
       end try;
     end if;
-    isogeny_from_sub := R*F;
 
-    if b then
-      // we found a curve, we go home early
-      return b, <isogeny_from_sub, C>;
-    end if;
-    Append(~res, <quosat, F, C, e>);
+    for elt in localres do
+      b, isog, C, e := Explode(elt);
+      isogeny_from_sub := R*isog;
+      if b then
+        // we found a curve, we go home early
+        return b, <isogeny_from_sub, C>;
+      end if;
+      Append(~res, <quosat, isogeny_from_sub, C, e>);
+    end for;
   end for;
   return false, res;
 end function;
+
+function WriteOutput(label, elt)
+  columns := [label];
+  if Type(elt) eq Tup then
+    columns cat:= [Sprint(Eltseq(x)) : x in elt];
+  else
+    columns cat:= ["NOTFOUND", Sprint(elt)];
+  end if;
+  mb := Sprintf("%.2o", GetMaximumMemoryUsage()*1.0*2^-20);
+  wt := Time(start);
+  columns cat:= [mb, wt];
+  return StripWhiteSpace(Join(columns, ":"));
+end function;
+
 b, res := Core(label, prec : debug:= assigned debug);
 
 
 
-function WriteOutput(elt)
-  if Type(elt) eq Tup then
-    r := Join([label] cat [Sprint(Eltseq(x)) : x in elt], ":");
-  else
-    r := Join([label, "NOTFOUND", Sprint(elt)], ":");
-  end if;
-  return StripWhiteSpace(r);
-end function;
+
 
 print WriteOutput(res);
 exit 0;
