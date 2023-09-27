@@ -3,6 +3,8 @@
 
 import "ComplexTori.m" : SkewSymmetricHomomorphismsRepresentation;
 
+declare verbose HomologyModularSymbols, 2;
+
 declare attributes ModSym:
   integral_homology_subquo, // SeqEnum[Tup<AlgMatElt, AlgMatElt>]
   homology_quo_in_sub,
@@ -31,16 +33,21 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
 { Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
   if not assigned f`integral_homology_subquo then
     A := AmbientSpace(f);
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Lattice(AmbientSpace(f))...";
+    vtime HomologyModularSymbols:
     L, phi := Lattice(A);
 
     CS := CuspidalSubspace(A);
     // compute an integral basis for CS
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing BoundaryMap...";
+    vtime HomologyModularSymbols:
     delta := Matrix(Basis(L)) * Matrix(Integers(), BoundaryMap(A));
     // B is an integral basis for CS
     B := [phi(b) : b in Basis(Kernel(delta))];
     fromCS := Matrix(Integers(), [Eltseq(elt) : elt in B]);
 
-
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing S: B -> Basis(CS)...";
+    vtime HomologyModularSymbols:
     // S: B -> Basis(CS)
     S, K := Solution(
       Matrix([Eltseq(elt) : elt in B]),
@@ -62,17 +69,21 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     V := ZeroMatrix(Integers(), 0, Dimension(CS));
     // we are going this method as NewSubspace basis is not always equipped with an integral, e.g., 285.2.a.d
     while Rank(H) ne desired_rank do
+        vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
         p := NextPrime(p);
         while Level(f) mod p eq 0 do
             p := NextPrime(p);
         end while;
         // Hecke operator with respect to the integral basis
+        vprintf HomologyModularSymbols: "p = %o\n", p;
         Tp := Matrix(Integers(), S*HeckeOperator(CS, p)*S1);
         h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree 2
         hp := Evaluate(h, Tp);
         H := HorizontalJoin(H, hp);
         V := VerticalJoin(V, hp);
     end while;
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hsub...";
+    vtime HomologyModularSymbols:
     Hsub := KernelMatrix(H);//this is supposed to be H[If], and If = (hp)_p, dim 4
     //If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
     D, _, Q := SmithForm(V);
@@ -82,6 +93,8 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
 
     // this basis projects down to the standard basis of (H/If H)_free
     // these are basis for Hquo
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo...";
+    vtime HomologyModularSymbols:
     Hquo := Submatrix(Q^-1, Nrows(Q) - Dimension(f) + 1, 1, Dimension(f), Ncols(Q));
 
     assert Rank(VerticalJoin(V, Hquo)) eq Dimension(CS);
