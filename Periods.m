@@ -116,8 +116,8 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
   if fast and k eq 2 then
     ncoeffs := BoundNumberOfCoefficients(f, d, prec);
     vprint ModAbVarRec: Sprintf("target ncoeffs = %o", ncoeffs);
-    P0 := matrix_helper(ncoeffs - Min(50, ncoeffs div 10));
-    P1 := matrix_helper(ncoeffs);
+    P0 := matrix_helper(ncoeffs);
+    P1 := matrix_helper(ncoeffs + Min(100, ncoeffs div 10));
     _, e := AlmostEqualMatrix(P0, P1);
     assert e lt 10^-prec;
   else
