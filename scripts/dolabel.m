@@ -16,6 +16,7 @@ if assigned outfile then
       labels := {};
     end try;
     if label in labels then
+      WriteStderr("Already computed " cat label);
       exit 0;
     end if;
 end if;
