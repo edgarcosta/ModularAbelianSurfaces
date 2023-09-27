@@ -9,7 +9,7 @@ prec := StringToInteger(prec);
 start := Time();
 
 if assigned outfile then
-  if label in {elt in getrecs(outfile)} then
+  if label in {elt[1] : elt in getrecs(outfile)} then
     exit 0;
   end if;
 end if;
