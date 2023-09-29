@@ -8,6 +8,10 @@ label := s[1];
 prec := StringToInteger(prec);
 start := Time();
 
+if assigned profile then
+  SetProfile(true);
+end if;
+
 if assigned outfile then
     try
       labels := {elt[1] : elt in getrecs(outfile)};
@@ -86,6 +90,10 @@ end function;
 b, res := Core(label, prec : debug:= assigned debug);
 WriteOutput(label, res);
 
+if assigned profile then
+  SetProfile(false);
+  ProfilePrintByTotalTime(ProfileGraph());
+end if;
 exit 0;
 
 
