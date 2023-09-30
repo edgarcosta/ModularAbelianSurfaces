@@ -67,7 +67,7 @@ function BoundNumberOfCoefficients(f, d, prec)
   We are summing
     ((e-1)*q^n + qd^n*(Exp(2*PI*i*n*b/d)-e*Exp(2*PI*i*n*c/d))) an/n
   |Exp(2*PI*i*n*b/d)-e*Exp(2*PI*i*n*c/d))| <= 2
-  |an| < d(n) sqrt(n)
+  |an| <= d(n) sqrt(n)
   d(n) < Exp(Log(2)Log(n)/(Log(Log(n)) - 1.3918))
   */
   g := func<n|
