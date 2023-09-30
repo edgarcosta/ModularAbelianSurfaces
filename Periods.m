@@ -68,11 +68,11 @@ function BoundNumberOfCoefficients(f, d, prec)
     ((e-1)*q^n + qd^n*(Exp(2*PI*i*n*b/d)-e*Exp(2*PI*i*n*c/d))) an/n
   |Exp(2*PI*i*n*b/d)-e*Exp(2*PI*i*n*c/d))| <= 2
   |an| <= d(n) sqrt(n)
-  d(n) < Exp(Log(2)Log(n)/(Log(Log(n)) - 1.3918))
+  d(n) < Exp(Log(2) * 1.538 * Log(n)/(Log(Log(n)))
   */
   g := func<n|
     err - min_entry*Abs((e - 1) * q^n /(1 - q) + 2 * qd^n /(1 - qd))*
-    Exp(Log(2)*Log(n)/(Log(Log(n)) - 1.3918))
+    Exp(Log(2) * 1.538 * Log(n)/(Log(Log(n))))
   >;
   return bisection(g, 2, Infinity);
 end function;
