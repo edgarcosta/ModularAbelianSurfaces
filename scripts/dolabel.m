@@ -48,10 +48,10 @@ function Core(label, prec : debug := false);
     Quotient, MaximalEnd := Explode(quosat);
     R := IsogenyFromSub(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
     if debug then
-      localres := RationalGenus2Curves(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
+      localres := RationalGenus2Curves(f : Precision:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
     else
       try
-        localres := RationalGenus2Curves(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
+        localres := RationalGenus2Curves(f : Precision:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
       catch er
         WriteStderr(er);
         Append(~res, <quosat, Sprint(er)>);

@@ -120,21 +120,21 @@ intrinsic RationalGenus2Curve(Omega::ModMatFldElt, f::ModSym) -> BoolElt, CrvHyp
 end intrinsic;
 
 
-intrinsic RationalGenus2Curves(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false, OnlyOne:=false) -> List
+intrinsic RationalGenus2Curves(f::ModSym : Precision:=0, Quotient:=false, MaximalEnd:=false, OnlyOne:=false) -> List
 {
   Return a boolean, an isomorphsim and Curve/Igusa invariants/j-invariants assobiated to each rational principal polarizations for Af (or quotient) of J_0(N) associated to f.
   (If MaximalEnd is true, then it is replaced by the isogenous variety such that End(Af) is maximal.)
   }
-  vprintf ModAbVarRec : "RationalGenus2Curves <prec, Quotient, MaximalEnd> = %o...\n", <prec, Quotient, MaximalEnd>;
+  vprintf ModAbVarRec : "RationalGenus2Curves <prec, Quotient, MaximalEnd> = %o...\n", <Precision, Quotient, MaximalEnd>;
   // to compute the principal polarizations we don't need the full precision
-  PPs := RationalPrincipalPolarizations(f : prec:=prec div 2, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  PPs := RationalPrincipalPolarizations(f : Precision:=Precision div 2, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   vprintf ModAbVarRec: "RationalGenus2Curves: #PPSs = %o\n", #PPs;
 
   res := [* *];
   if #PPs eq 0 then
     return res;
   end if;
-  Omega := PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  Omega := PeriodMatrix(f : Precision:=Precision, Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   CC := BaseRing(Omega);
   for i->pp in PPs do
     vprintf ModAbVarRec: "Trying polarization = %o\n", i;

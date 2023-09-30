@@ -5,7 +5,7 @@ SetVerbose("ModAbVar", 2);
 SetVerbose("ModularSymbols", 2);
 prec := 50;
 f := LMFDBNewform(label);
-res := RationalGenus2Curves(f : prec:=prec);
+res := RationalGenus2Curves(f : Precision:=prec);
 assert #res eq 1;
 b, isog, C := Explode(res[1]);
 assert b;

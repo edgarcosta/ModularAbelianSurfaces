@@ -160,13 +160,13 @@ intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> S
     return PrincipalPolarizations(Omega, [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)]);
 end intrinsic;
 
-intrinsic RationalPrincipalPolarizations(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false ) -> SeqEnum[AlgMAtElt]
+intrinsic RationalPrincipalPolarizations(f::ModSym : Precision:=0, Quotient:=false, MaximalEnd:=false ) -> SeqEnum[AlgMAtElt]
 {
   All rational principal polarizations for Af (or quotient) of J_0(N) associated to f.
   If MaximalEnd is true, then it is replaced by the isogenous variety such that End(Af) is maximal.
 }
   // so we delay the computation of the Period matrix
-  Omega := func<|PeriodMatrix(f : prec:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd)>;
+  Omega := func<|PeriodMatrix(f : Precision:=Precision, Quotient:=Quotient, MaximalEnd:=MaximalEnd)>;
   SelfDualHoms := RationalSelfDualHomomorphisms(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   pps := PrincipalPolarizations(Omega, SelfDualHoms);
   // Note: NarrowClassNumber always returns the narrow class number of the maximal order O

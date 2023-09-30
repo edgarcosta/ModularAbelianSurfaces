@@ -3,6 +3,7 @@
 // and uses IntegralHomology(f::ModSym) instead of calling the magma builtin IntegralHomology(A::ModAbVar)
 
 import !"Geometry/ModSym/analytic.m" : PeriodGenerators;
+import !"Geometry/ModSym/operators.m" : AtkinLehnerSign;
 
 function GoodPeriodGenerators(f : tries:=50)
   // Stein: "extremely important to choose γ in Proposition 3.57 with d small, otherwise the series will converge very slowly."
@@ -57,7 +58,6 @@ function BoundNumberOfCoefficients(f, d, prec)
   N := Level(f);
   q := Exp(- 2 * Pi(RealField()) / Sqrt(N));
   qd := q^(1/d);
-  //prec := Precision(GetDefaultRealField());
   err := 10^-prec;
   Mf := Matrix([pi_f(b) : b in Basis(f)]) where pi_f := PeriodMapping(f, 50);
   Mfabs := [Abs(elt) : elt in Eltseq(Mf)];
@@ -77,8 +77,14 @@ function BoundNumberOfCoefficients(f, d, prec)
   return bisection(g, 2, Infinity);
 end function;
 
-intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, FldElt
+PREC := Precision;
+intrinsic PeriodMappingMatrix(f::ModSym : Precision:=0) -> ModMatFldElt, RngIntElt, FldElt
   { Compute the normalized period matrix associated to f }
+  prec := Precision; // the optonal argument
+  Precision := PREC; // the intrinsic
+  if prec eq 0 then
+    prec := Precision(GetDefaultRealField());
+  end if;
   // clear cache
   extra_prec := Ceiling(prec/0.95 + 10); // equality is checked at 95% of the digits or at extra 10 digits
   if assigned f`PeriodMap and Precision(BaseRing(Codomain(f`PeriodMap))) lt extra_prec then
@@ -149,18 +155,22 @@ intrinsic PeriodMappingMatrix(f::ModSym : prec:=80) -> ModMatFldElt, RngIntElt, 
 end intrinsic;
 
 
-intrinsic PeriodMatrix(f::ModSym : prec:=80, Quotient:=false, MaximalEnd:=false) -> ModMatFldElt, ModMatRngElt
+intrinsic PeriodMatrix(f::ModSym : Precision:=80, Quotient:=false, MaximalEnd:=false) -> ModMatFldElt, ModMatRngElt
   { Compute the period matrix associated to f A_f^sub or A_f^quo }
+  prec := Precision; // the optonal argument
+  Precision := PREC; // the intrinsic
   vprintf ModAbVarRec: "Comuting the lattices...";
   vtime ModAbVarRec:
   basis, E := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
-  P := PeriodMappingMatrix(f : prec := prec);
+  P := PeriodMappingMatrix(f : Precision := prec);
   return P*Matrix(BaseRing(P),  Transpose(basis)), E;
 end intrinsic;
 
-intrinsic PeriodMatrixSubMagma(f::ModSym : prec:=80) -> ModMatFldElt
+intrinsic PeriodMatrixSubMagma(f::ModSym : Precision:=80) -> ModMatFldElt
   { Compute the period matrix associated to f A_f^sub via Magma's computation of integral homology }
-  _, ncoeffs, _ := PeriodMappingMatrix(f : prec:=prec);
+  prec := Precision; // the optonal argument
+  Precision := PREC; // the intrinsic
+  _, ncoeffs, _ := PeriodMappingMatrix(f : Precision:=prec);
   P := Matrix(Periods(f, ncoeffs)); // this should use the cached map
   assert Precision(BaseRing(P)) gt prec;
   CC := ComplexFieldExtra(prec);
