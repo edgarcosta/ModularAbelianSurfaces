@@ -53,11 +53,7 @@ end function;
 // compute a upper bound on the number of coefficients in the q-expansion
 // so that all digits are correct
 function BoundNumberOfCoefficients(f, d, prec)
-  // L(f,1)(1+eps) = 0
-  eps := 1;
-  if LRatio(f, 1) eq 0 then
-    eps := -1;
-  end if;
+  e := AtkinLehnerSign(f);
   N := Level(f);
   q := Exp(- 2 * Pi(RealField()) / Sqrt(N));
   qd := q^(1/d);
@@ -75,7 +71,7 @@ function BoundNumberOfCoefficients(f, d, prec)
   d(n) < Exp(Log(2)Log(n)/(Log(Log(n)) - 1.3918))
   */
   g := func<n|
-    err - min_entry*Abs((eps - 1) * q^n /(1 - q) + 2 * qd^n /(1 - qd))*
+    err - min_entry*Abs((e - 1) * q^n /(1 - q) + 2 * qd^n /(1 - qd))*
     Exp(Log(2)*Log(n)/(Log(Log(n)) - 1.3918))
   >;
   return bisection(g, 2, Infinity);
