@@ -34,7 +34,7 @@ if assigned verbose then
   SetVerbose("ModAbVarRec", Min(3, verbose));
   SetVerbose("CurveRec", Min(2, verbose));
   SetVerbose("HomologyModularSymbols", Min(2, verbose));
-  SetVerbose("ModularSymbols", Min(3, verbose));
+  //SetVerbose("ModularSymbols", Min(3, verbose));
 end if;
 if assigned debug then
   SetDebugOnError(true);
@@ -92,7 +92,7 @@ WriteOutput(label, res);
 
 if assigned profile then
   SetProfile(false);
-  ProfilePrintByTotalTime(ProfileGraph(): Max:=10);
+  ProfilePrintByTotalTime(ProfileGraph(): Max:=50);
 end if;
 exit 0;
 

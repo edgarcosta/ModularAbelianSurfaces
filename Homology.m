@@ -70,6 +70,8 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     // we are going this method as NewSubspace basis is not always equipped with an integral, e.g., 285.2.a.d
     while Rank(H) ne desired_rank do
         vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
+        vprintf HomologyModularSymbols: "IntegralHomology: H = %o x %o matrix\n", Nrows(H), Ncols(H);
+        vprintf HomologyModularSymbols: "IntegralHomology: V = %o x %o matrix\n", Nrows(V), Ncols(V);
         p := NextPrime(p);
         while Level(f) mod p eq 0 do
             p := NextPrime(p);
@@ -77,15 +79,25 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
         // Hecke operator with respect to the integral basis
         vprintf HomologyModularSymbols: "p = %o\n", p;
         Tp := Matrix(Integers(), S*HeckeOperator(CS, p)*S1);
-        h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree 2
+        h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree d/2
         hp := Evaluate(h, Tp);
         H := HorizontalJoin(H, hp);
         V := VerticalJoin(V, hp);
     end while;
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hsub...";
+    vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
+    vprintf HomologyModularSymbols: "IntegralHomology: H = %o x %o matrix\n", Nrows(H), Ncols(H);
+    vprintf HomologyModularSymbols: "IntegralHomology: V = %o x %o matrix\n", Nrows(V), Ncols(V);
+
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hsub: Kernel(H)...";
     vtime HomologyModularSymbols:
-    Hsub := KernelMatrix(H);//this is supposed to be H[If], and If = (hp)_p, dim 4
-    //If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
+    // Hsub represents the Z^d = H[If] \hookrightarrow H = Z^#B = CuspdalSubspace(A)
+    // where If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
+    Hsub := KernelMatrix(H);
+
+    // TODO: can one avoid the SmithForm?
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: SmithForm(V)...";
+    vtime HomologyModularSymbols:
+    // D = VerticalJoin(DiagonalMatrix([1,1,...,k,0,0,0,0]), ZeroMatrix(Ncold(D), Ncols(D)))
     D, _, Q := SmithForm(V);
     if Nrows(D) gt 0 then
       assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
@@ -93,11 +105,20 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
 
     // this basis projects down to the standard basis of (H/If H)_free
     // these are basis for Hquo
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo...";
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: Q^-1 (%o x %o)...", Nrows(Q), Ncols(Q);
     vtime HomologyModularSymbols:
-    Hquo := Submatrix(Q^-1, Nrows(Q) - Dimension(f) + 1, 1, Dimension(f), Ncols(Q));
+    // Hquo: Z^d = (H/If)_free -> H = Z^#B = CuspdalSubspace(A)
+    // that projects down to a basis of (H/If)_free
+    Hquo := Solution(Q, HorizontalJoin(ZeroMatrix(Integers(), Dimension(f), Nrows(Q) - Dimension(f)), IdentityMatrix(Integers(), Dimension(f))));
+    // Alternatively:
+    // Hquo := Submatrix(Q^-1, Nrows(Q) - Dimension(f) + 1, 1, Dimension(f), Ncols(Q));
+    // but we dont need to invert the full matrix
 
-    assert Rank(VerticalJoin(V, Hquo)) eq Dimension(CS);
+    if Nrows(V) + Ncols(V) lt 2000 then // as this gets expensive
+      vprintf HomologyModularSymbols: "IntegralHomology: Asserting that the basis of (H/If H) is correct...";
+      vtime HomologyModularSymbols:
+      assert Rank(VerticalJoin(V, Hquo)) eq Dimension(CS);
+    end if;
 
     //this is the projection of H_sub in (H/If H)_free
     Hsub_in_Hquo := Hsub*Submatrix(Q, 1, Ncols(Q) - Dimension(f) + 1, Nrows(Q), Dimension(f));
@@ -109,6 +130,8 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     Hquo_in_Hsub *:= Denominator(Hquo_in_Hsub);
     Hquo_in_Hsub := Matrix(Integers(), Hquo_in_Hsub);
 
+    vprintf HomologyModularSymbols: "IntegralHomology: H[If] in terms of Basis(f)...";
+    vtime HomologyModularSymbols:
     S := Matrix(Integers(), KernelMatrix(VerticalJoin( Matrix(Rationals(), Hsub*fromCS), -Matrix([Eltseq(b) : b in Basis(f)]))));
     assert Submatrix(S, 1,1, Dimension(f), Dimension(f)) eq 1;
     // how to write Hsub basis in terms of Basis(f)
@@ -117,6 +140,8 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     // how to write Hquo in terms of Basis(f)
     Hquo_in_Bf := Hquo_in_Hsub*Hsub_in_Bf;
 
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing IntersectionPairing(f)...";
+    vtime HomologyModularSymbols:
     Ef := IntersectionPairing(f);
     Esub, Equo := Explode([Matrix(Integers(), A*Denominator(A)) where A := S*Ef*Transpose(S) where S:=Matrix(Rationals(), elt) : elt in [Hsub_in_Bf, Hquo_in_Bf]]);
     // Esub div:= GCD(Eltseq(Esub)); //???

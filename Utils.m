@@ -23,14 +23,14 @@ end intrinsic;
 
 intrinsic MakeNewformModSym(level::RngIntElt, hecke_cutters::SeqEnum[Tup]) -> ModSym
 { "TODO: add documentation" }
-    vprintf ModAbVarRec: "MakeNewformModSym(%o, %o)\n", level, &cat Split(Sprint(hecke_cutters), "\n");
+    vprintf ModAbVarRec: "MakeNewformModSym(%o, %o)...", level, &cat Split(Sprint(hecke_cutters), "\n");
     R<x> := PolynomialRing(Rationals());
     // SetVerbose("ModularSymbols", true);
     chi := DirichletGroup(level)!1;
     Rhecke_cutters := [<elt[1], R!elt[2]> : elt in hecke_cutters];
     Snew := NewSubspace(CuspidalSubspace(ModularSymbols(chi,2)));
+    vtime ModAbVarRec:
     f := Kernel(Rhecke_cutters ,Snew);
-    vprintf ModAbVarRec: "Done MakeNewformModSym(%o, %o)\n", level, &cat Split(Sprint(hecke_cutters), "\n");
     return f;
 end intrinsic;
 
