@@ -105,7 +105,7 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
 
     // this basis projects down to the standard basis of (H/If H)_free
     // these are basis for Hquo
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: Q^-1 (%o x %o)...", Nrows(Q), Ncols(Q);
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: %o rows of Q^-1 (%o x %o)...", Dimension(f), Nrows(Q), Ncols(Q);
     vtime HomologyModularSymbols:
     // Hquo: Z^d = (H/If)_free -> H = Z^#B = CuspdalSubspace(A)
     // that projects down to a basis of (H/If)_free
@@ -225,11 +225,15 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
       rt := rts[1][1];
       f`maxend_subquo := [];
       for gen in gens do // now we handle the subvariety/quotient independently
-        sqrtD := &+[c*gen^(i-1) : i->c in Eltseq(rt)];
-        DpSqrtD := D*gen^0 + sqrtD;
+        den := LCM([Denominator(c) : c in Eltseq(rt)]);
+        // den * Sqrt(D)
+        sqrtD := &+[Numerator(c)*(den div Denominator(c))*gen^(i-1) : i->c in Eltseq(rt)];
+        // den(D + Sqrt(D))
+        DpSqrtD := den*D*gen^0 + sqrtD;
+        assert BaseRing(DpSqrtD) cmpeq Integers();
 
-        // right kernel of [2, D+Sqrt(D)]
-        kernel := Transpose(KernelMatrix(Transpose(HorizontalJoin(2*gen^0, DpSqrtD))));
+        // right kernel of [2, D+Sqrt(D)] = right kernel of [den*2, den*(D+Sqrt(D))]
+        kernel := Transpose(KernelMatrix(Transpose(HorizontalJoin(den*2*gen^0, DpSqrtD))));
         // REMOVE: unused when when 2.28-3 arrives
         S, T, unused := SmithForm(Matrix(Integers(), kernel));
         assert Submatrix(S, 1, 1, 4, 4) eq 1;
@@ -243,11 +247,11 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
         // The columns of Rtomax tell us how to write
         // the integral homology of A_max in terms of the integral homology of A
         // thus for consistency we store and return the transpose
-        Rtomax := 2*A + DpSqrtD*B;
+        Rtomax := den*2*A + DpSqrtD*B;
 
         newDpSqrtD := Matrix(Integers(), R^-1*DpSqrtD*R) where R:=Matrix(Rationals(), Rtomax);
         assert &and[elt mod 2 eq 0 : elt in Eltseq(newDpSqrtD)];
-        newgen := Matrix(Integers(), newDpSqrtD div 2);
+        newgen := Matrix(Integers(), newDpSqrtD div (2*den));
         assert IsMaximal(EquationOrder(MinimalPolynomial(newgen)));
         newH := LLL([IdentityMatrix(Integers(), 2*g), newgen]);
         Append(~f`maxend_subquo, <Transpose(Rtomax), newH>);
