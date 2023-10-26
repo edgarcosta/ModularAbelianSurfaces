@@ -4,13 +4,13 @@ intrinsic Imaginary(M::Mtrx[FldCom]) -> Mtrx[FldRe]
 end intrinsic;
 
 
-intrinsic LMFDBNewform(label::MonStgElt) -> ModSym
+intrinsic LMFDBNewform(label::MonStgElt : labelswithhecke:="data/labelswithhecke.txt") -> ModSym
 { Return modular form given label }
     filenames := GetFilenames(MakeNewformModSym);
     assert #filenames eq 1;
 
     dirname := "/" cat Join(s[1..(#s - 1)], "/") where s := Split(filenames[1,1],"/");
-    for elt in getrecs(dirname cat "/data/labelswithhecke.txt") do
+    for elt in getrecs(dirname cat "/" cat labelswithhecke) do
         if elt[1] eq label then
             level := StringToInteger(elt[2]);
             hc := eval elt[3];
