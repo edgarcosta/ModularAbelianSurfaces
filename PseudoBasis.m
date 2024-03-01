@@ -8,6 +8,7 @@ intrinsic PseudoBasis(R::AlgMatElt[RngInt] : TryPrincipalize := false) -> SeqEnu
   dn := Nrows(R);
   assert dn eq Ncols(R);  // square
   f := MinimalPolynomial(R);
+  assert d eq 2;
   d := Degree(f);
   assert dn mod d eq 0;
   n := dn div d;
@@ -24,7 +25,7 @@ intrinsic PseudoBasis(R::AlgMatElt[RngInt] : TryPrincipalize := false) -> SeqEnu
   assert &and[IsZero(N[i]) : i in [dn-n+1..dn]];
   N := RowSubmatrix(N,[1..dn-n]);
   pivots := [PivotColumn(N,i) : i in [1..Nrows(N)] | not IsZero(N[i])];
-  assert #pivots eq n;  // otherwise, huh?
+  assert #pivots eq d*n - n;  // otherwise, huh?
   inds := [j : j in [1..dn] | j notin pivots];
 
   // the only step with content, just compute the row span
@@ -53,6 +54,7 @@ intrinsic PseudoBasis(R::AlgMatElt[RngInt] : TryPrincipalize := false) -> SeqEnu
   end if;
   return [<CI[k], Lambdabas[k]> : k in [1..n]];
 end intrinsic;
+
 
 CheckPseudoBasis := function(P, R);
   ZZK := Order(P[1][1]);
