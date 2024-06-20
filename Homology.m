@@ -29,6 +29,9 @@ intrinsic IsogenyFromSub(f : Quotient:=false, MaximalEnd:=false) -> AlgMAtElt
   return R;
 end intrinsic;
 
+// TODO: separate the quotient comuputation from the sub
+// TODO: clarify that in the paper we write things with a right action, i.e. the map F^m -> F^n is represented by a n x m matrix
+// However, for purposes of efficiency Magma prefers the other way around
 intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt, AlgMatElt
 { Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
   if not assigned f`integral_homology_subquo then
@@ -67,7 +70,7 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
     H := ZeroMatrix(Integers(), Dimension(CS), 0);
     V := ZeroMatrix(Integers(), 0, Dimension(CS));
-    // we are going this method as NewSubspace basis is not always equipped with an integral, e.g., 285.2.a.d
+    // we are doing this method as NewSubspace basis is not always equipped with an integral, e.g., 285.2.a.d
     while Rank(H) ne desired_rank do
         vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
         vprintf HomologyModularSymbols: "IntegralHomology: H = %o x %o matrix\n", Nrows(H), Ncols(H);
@@ -94,10 +97,12 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     // where If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
     Hsub := KernelMatrix(H);
 
-    // TODO: can one avoid the SmithForm?
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: SmithForm(V)...";
+    // TODO: can one avoid the HermiteForm?
+    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: HermiteForm(V)...";
     vtime HomologyModularSymbols:
     // D = VerticalJoin(DiagonalMatrix([1,1,...,k,0,0,0,0]), ZeroMatrix(Ncold(D), Ncols(D)))
+    // Note, since we omit the 2nd output, this is a HermiteForm computation
+    // TODO, indeed use HermiteForm
     D, _, Q := SmithForm(V);
     if Nrows(D) gt 0 then
       assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
@@ -268,13 +273,14 @@ intrinsic RationalSelfDualHomomorphisms(f::ModSym : Quotient:=false, MaximalEnd:
   A basis of self-dual homomorphisms from A -> A^v defined over Q, given as 2g by 2g where A is the subvariety (or quotient) of J_0(N) associated to f
     }
   Rs := HeckeAlgebraIntegralBasis(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  // this is a QQ-polarization
   _, E := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   g := Nrows(E) div 2;
   //maps Omega to Omega dual are just E composed with endomorphisms, then saturated
   ERs := [E*elt : elt in Rs];
   // now we saturate
-  M := Matrix([Eltseq(elt) : elt in ERs]);
-  sERs := [Matrix(Integers(), 2*g, 2*g, Eltseq(elt)) : elt in Rows(Saturation(M))];
+  M := Saturation(Matrix([Eltseq(elt) : elt in ERs]));
+  sERs := [Matrix(Integers(), 2*g, 2*g, Eltseq(elt)) : elt in Rows(M)];
   pairs := [<1, elt> : elt in sERs]; // SkewSymmetricHomomorphismsRepresentation expects pairs
   pairs_skewZZ := SkewSymmetricHomomorphismsRepresentation(pairs);
   skewZZ := [elt[2] : elt in pairs_skewZZ];
