@@ -25,7 +25,7 @@ intrinsic PossibleQuadraticTwists(C::CrvHyp, euler_factors::UserProgram, BadPrim
     // Compute euler factor of the original object
     vprintf ModAbVarRec: "Euler factor original ", p;
     vtime ModAbVarRec:
-    eff := euler_factors(p);
+    eff := Parent(efc)!euler_factors(p);
     vprint ModAbVarRec: "Euler factor f = ", Coefficients(eff);
 
 
