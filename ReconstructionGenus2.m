@@ -213,7 +213,7 @@ end intrinsic;
 
 
 
-intrinsic IgusaInvariantsG2(inp::AlgMatElt : G2CC := false, Reduce:=true) -> .
+intrinsic IgusaInvariantsG2(inp::. : G2CC := false, Reduce:=true) -> .
 { FIXME }
   if G2CC cmpeq false then
     // quicker to use RosenhainInvariants
