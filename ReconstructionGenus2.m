@@ -213,7 +213,8 @@ end intrinsic;
 
 
 
-function IgusaInvariantsG2(inp : G2CC := false, Reduce:=true)
+intrinsic IgusaInvariantsG2(inp::AlgMatElt : G2CC := false, Reduce:=true) -> .
+{ FIXME }
   if G2CC cmpeq false then
     // quicker to use RosenhainInvariants
     _, tau := BigAndSmallPeriodMatrix(inp);
@@ -228,7 +229,7 @@ function IgusaInvariantsG2(inp : G2CC := false, Reduce:=true)
   end if;
   JCC := IgusaInvariants(fCC);
   return WPSNormalizeCC([2,4,6,8,10], JCC);
-end function;
+end intrinsic;
 
 function AlgebraizedInvariantsG2(inp, K : Base:=false, UpperBound:=16, G2CC:=false, type:="Igusa", Reduce:=true)
 
