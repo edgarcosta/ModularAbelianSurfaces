@@ -6,19 +6,20 @@ import "ComplexTori.m" : SkewSymmetricHomomorphismsRepresentation;
 declare verbose HomologyModularSymbols, 2;
 
 declare attributes ModSym:
-  integral_homology_subquo, // SeqEnum[Tup<AlgMatElt, AlgMatElt>]
+  prime_cutters,
+  integral_homology_sub,
+  integral_homology_quo,
+  integral_cuspidal_ambient,
   homology_quo_in_sub,
   hecke_ring_subquo, // SeqEnum[SeqEnum[AlgMatElt]]
   maxend_subquo; // SeqEnum[Tup<AlgMatElt,SeqEnum[AlgMatElt]>] the second entry is the hecke ring
 
 intrinsic IsogenyFromSub(f : Quotient:=false, MaximalEnd:=false) -> AlgMAtElt
 { The isogeny between subvariety and A', where A' can be the subvariaty/quotient variety of J_0(N) associated to f (with maximal endomorphism ring), i.e., how to write the (integral homology) basis for the quotient in terms of the basis for the subvariety}
-  if not assigned f`integral_homology_subquo then
-    _ := IntegralHomology(f);
-  end if;
   R := IdentityMatrix(Integers(), Dimension(f));
-  if Quotient then
+  if Quotient and not assigned f`homology_quo_in_sub then
     // sub to quotient
+    _ := IntegralHomologyQuo(f);
     R := f`homology_quo_in_sub;
   end if;
   if MaximalEnd then
@@ -29,12 +30,11 @@ intrinsic IsogenyFromSub(f : Quotient:=false, MaximalEnd:=false) -> AlgMAtElt
   return R;
 end intrinsic;
 
-// TODO: separate the quotient comuputation from the sub
-// TODO: clarify that in the paper we write things with a right action, i.e. the map F^m -> F^n is represented by a n x m matrix
-// However, for purposes of efficiency Magma prefers the other way around
-intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt, AlgMatElt
-{ Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
-  if not assigned f`integral_homology_subquo then
+
+intrinsic IntegralBasisCuspidalAmbient(f::ModSym) -> Tup
+  {returns tripe <S, S^-1, fromCStoAmbient> as matrices where S: IntegralBasis(CS) -> Basis(CS),
+  and fromCStoAmbient: IntegralBasis(CS) -> AmbientSpace(f)}
+  if not assigned f`integral_cuspidal_ambient then
     A := AmbientSpace(f);
     vprintf HomologyModularSymbols: "IntegralHomology: Computing Lattice(AmbientSpace(f))...";
     vtime HomologyModularSymbols:
@@ -47,7 +47,7 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     delta := Matrix(Basis(L)) * Matrix(Integers(), BoundaryMap(A));
     // B is an integral basis for CS
     B := [phi(b) : b in Basis(Kernel(delta))];
-    fromCS := Matrix(Integers(), [Eltseq(elt) : elt in B]);
+    fromCStoAmbient := Matrix(Integers(), [Eltseq(elt) : elt in B]);
 
     vprintf HomologyModularSymbols: "IntegralHomology: Computing S: B -> Basis(CS)...";
     vtime HomologyModularSymbols:
@@ -64,67 +64,102 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
       S := Matrix(Integers(), S);
     end if;
     S1 := S^-1;
+    f`integral_cuspidal_ambient := <S, S1, fromCStoAmbient>;
+  end if;
+  return f`integral_cuspidal_ambient;
+end intrinsic;
 
-
+intrinsic IntegralHomologySub(f::ModSym) -> AlgMatElt, AlgMatElt, AlgMatElt
+{ Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
+  if not assigned f`integral_homology_sub then
+    S, S1, fromCStoAmbient := Explode(IntegralBasisCuspidalAmbient(f));
+    A := AmbientSpace(f);
+    CS := CuspidalSubspace(A);
+    // compute the set of primes that pins down the Vf
+    f`prime_cutters := [];
     p := 1;
     desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
     H := ZeroMatrix(Integers(), Dimension(CS), 0);
-    V := ZeroMatrix(Integers(), 0, Dimension(CS));
     // we are doing this method as NewSubspace basis is not always equipped with an integral, e.g., 285.2.a.d
     while Rank(H) ne desired_rank do
-        vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
-        vprintf HomologyModularSymbols: "IntegralHomology: H = %o x %o matrix\n", Nrows(H), Ncols(H);
-        vprintf HomologyModularSymbols: "IntegralHomology: V = %o x %o matrix\n", Nrows(V), Ncols(V);
+      vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
+      vprintf HomologyModularSymbols: "IntegralHomology: H = %o x %o matrix\n", Nrows(H), Ncols(H);
+      p := NextPrime(p);
+      while Level(f) mod p eq 0 do
         p := NextPrime(p);
-        while Level(f) mod p eq 0 do
-            p := NextPrime(p);
-        end while;
-        // Hecke operator with respect to the integral basis
-        vprintf HomologyModularSymbols: "p = %o\n", p;
-        Tp := Matrix(Integers(), S*HeckeOperator(CS, p)*S1);
-        h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree d/2
-        hp := Evaluate(h, Tp);
-        H := HorizontalJoin(H, hp);
-        V := VerticalJoin(V, hp);
+      end while;
+      // Hecke operator with respect to the integral basis
+      vprintf HomologyModularSymbols: "p = %o\n", p;
+      Tp := Matrix(Integers(), S*HeckeOperator(CS, p)*S1);
+      h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree d/2
+      hp := Evaluate(h, Tp);
+      H := HorizontalJoin(H, hp);
+      Append(~f`prime_cutters, p);
     end while;
-    vprintf HomologyModularSymbols: "IntegralHomology: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
-    vprintf HomologyModularSymbols: "IntegralHomology: H = %o x %o matrix\n", Nrows(H), Ncols(H);
-    vprintf HomologyModularSymbols: "IntegralHomology: V = %o x %o matrix\n", Nrows(V), Ncols(V);
+    vprintf HomologyModularSymbols: "IntegralHomologySub: Rank(H) = %o, desired_rank = %o\n", Rank(H), desired_rank;
+    vprintf HomologyModularSymbols: "IntegralHomologySub: H = %o x %o matrix\n", Nrows(H), Ncols(H);
 
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hsub: Kernel(H)...";
+    vprintf HomologyModularSymbols: "IntegralHomologySub: Computing Hsub inside the CuspidalSubspace: Kernel(H)...";
     vtime HomologyModularSymbols:
-    // Hsub represents the Z^d = H[If] \hookrightarrow H = Z^#B = CuspdalSubspace(A)
+    // Hsub represents the Z^d = H[If] \hookrightarrow H = Z^#B = CuspidalSubspace(A)
     // where If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
     Hsub := KernelMatrix(H);
 
-    // TODO: can one avoid the HermiteForm?
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: HermiteForm(V)...";
+    vprintf HomologyModularSymbols: "IntegralHomologySub: H[If] in terms of Basis(f)...";
     vtime HomologyModularSymbols:
-    // D = VerticalJoin(DiagonalMatrix([1,1,...,k,0,0,0,0]), ZeroMatrix(Ncold(D), Ncols(D)))
-    // Note, since we omit the 2nd output, this is a HermiteForm computation
-    // TODO, indeed use HermiteForm
-    D, _, Q := SmithForm(V);
-    if Nrows(D) gt 0 then
-      assert Diagonal(D)[Ncols(D)-Dimension(f)+1..Ncols(D)] eq [0 : _ in [1..Dimension(f)]];
-    end if;
+    // Hsub*fromCStoAmbient = IntegralBasis(f) -> AmbientSpace(f);
+    // the other matrix is the Basis(f) in the coordinates of AmbientSpace(f)
+    S := KernelMatrix(VerticalJoin( Matrix(Rationals(), Hsub*fromCStoAmbient), -Matrix([Eltseq(b) : b in Basis(f)])));
+    // make it integral
+    S := Matrix(Integers(), S);
+    assert Submatrix(S, 1,1, Dimension(f), Dimension(f)) eq 1;
+    // how to write Hsub basis in terms of Basis(f)
+    // IntegralBasis(f) -> Basis(f)
+    Hsub_in_Bf := Submatrix(S, 1,1 + Dimension(f), Dimension(f), Dimension(f));
 
-    // this basis projects down to the standard basis of (H/If H)_free
-    // these are basis for Hquo
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing Hquo: %o rows of Q^-1 (%o x %o)...", Dimension(f), Nrows(Q), Ncols(Q);
+
+    // now compute the polarization
+    vprintf HomologyModularSymbols: "IntegralHomologySub: Computing IntersectionPairing(f)...";
     vtime HomologyModularSymbols:
-    // Hquo: Z^d = (H/If)_free -> H = Z^#B = CuspdalSubspace(A)
-    // that projects down to a basis of (H/If)_free
-    Hquo := Solution(Q, HorizontalJoin(ZeroMatrix(Integers(), Dimension(f), Nrows(Q) - Dimension(f)), IdentityMatrix(Integers(), Dimension(f))));
-    // Alternatively:
-    // Hquo := Submatrix(Q^-1, Nrows(Q) - Dimension(f) + 1, 1, Dimension(f), Ncols(Q));
-    // but we dont need to invert the full matrix
+    Ef := IntersectionPairing(f);
+    Esub := S*Ef*Transpose(S) where S:=Matrix(Rationals(), Hsub_in_Bf);
+    // make it integral
+    Esub := Matrix(Integers(), Esub*Denominator(Esub));
 
-    if Nrows(V) + Ncols(V) lt 2000 then // as this gets expensive
-      vprintf HomologyModularSymbols: "IntegralHomology: Asserting that the basis of (H/If H) is correct...";
-      vtime HomologyModularSymbols:
-      assert Rank(VerticalJoin(V, Hquo)) eq Dimension(CS);
-    end if;
+    f`integral_homology_sub := <Hsub_in_Bf, Esub, Hsub>;
+  end if;
 
+  return Explode(f`integral_homology_sub);
+end intrinsic;
+
+
+intrinsic IntegralHomologyQuo(f::ModSym) -> AlgMatElt, AlgMatElt
+{ Change of basis matrix from Basis(f) to the integral homology basis for the abelian quotient of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
+  if not assigned f`integral_homology_quo then
+    Hsub_in_Bf, Esub, Hsub := IntegralHomologySub(f);
+    S, S1, fromCStoAmbient := Explode(IntegralBasisCuspidalAmbient(f));
+    A := AmbientSpace(f);
+    CS := CuspidalSubspace(A);
+    desired_rank := Dimension(CS) - Dimension(f); // rank of If*H
+    M := ZeroMatrix(Integers(), 0, Dimension(CS));
+    for p in f`prime_cutters do // these are computed in IntegralHomologySub
+      vprintf HomologyModularSymbols: "IntegralHomologyQuo: M = %o x %o matrix\n", Nrows(M), Ncols(M);
+      // Hecke operator with respect to the integral basis
+      vprintf HomologyModularSymbols: "p = %o\n", p;
+      Tp := Matrix(Integers(), S*HeckeOperator(CS, p)*S1);
+      h := ChangeRing(MinimalPolynomial(HeckeOperator(f, p)), Integers()); //degree d/2
+      hp := Evaluate(h, Tp);
+      M := VerticalJoin(M, hp);
+    end for;
+    vprintf HomologyModularSymbols: "IntegralHomologyQuo: Rank(M) = %o, desired_rank = %o\n", Rank(M), desired_rank;
+    assert Rank(M) eq desired_rank;
+    vprintf HomologyModularSymbols: "IntegralHomologyQuo: M = %o x %o matrix\n", Nrows(M), Ncols(M);
+
+    vprintf HomologyModularSymbols: "IntegralHomologyQuo: Computing Hquo: HermiteForm(M)...";
+    vtime HomologyModularSymbols:
+    // Q*M = a matrix where the last 2g rows are zero
+    H, Q := HermiteForm(M);
+    assert IsZero(Submatrix(H, Nrows(H) - Dimension(f) + 1, 1, Dimension(f), Ncols(H)));
     //this is the projection of H_sub in (H/If H)_free
     Hsub_in_Hquo := Hsub*Submatrix(Q, 1, Ncols(Q) - Dimension(f) + 1, Nrows(Q), Dimension(f));
 
@@ -135,26 +170,22 @@ intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Al
     Hquo_in_Hsub *:= Denominator(Hquo_in_Hsub);
     Hquo_in_Hsub := Matrix(Integers(), Hquo_in_Hsub);
 
-    vprintf HomologyModularSymbols: "IntegralHomology: H[If] in terms of Basis(f)...";
-    vtime HomologyModularSymbols:
-    S := Matrix(Integers(), KernelMatrix(VerticalJoin( Matrix(Rationals(), Hsub*fromCS), -Matrix([Eltseq(b) : b in Basis(f)]))));
-    assert Submatrix(S, 1,1, Dimension(f), Dimension(f)) eq 1;
-    // how to write Hsub basis in terms of Basis(f)
-    Hsub_in_Bf := Submatrix(S, 1,1 + Dimension(f), Dimension(f), Dimension(f));
-
-    // how to write Hquo in terms of Basis(f)
-    Hquo_in_Bf := Hquo_in_Hsub*Hsub_in_Bf;
-
-    vprintf HomologyModularSymbols: "IntegralHomology: Computing IntersectionPairing(f)...";
-    vtime HomologyModularSymbols:
-    Ef := IntersectionPairing(f);
-    Esub, Equo := Explode([Matrix(Integers(), A*Denominator(A)) where A := S*Ef*Transpose(S) where S:=Matrix(Rationals(), elt) : elt in [Hsub_in_Bf, Hquo_in_Bf]]);
-    // Esub div:= GCD(Eltseq(Esub)); //???
-    // Equo div:= GCD(Eltseq(Equo));
-    f`integral_homology_subquo := [ <Hsub_in_Bf, Esub>, <Hquo_in_Bf, Equo> ];
-    f`homology_quo_in_sub := Hquo_in_Hsub;
+    Equo := S*Esub*Transpose(S) where S:=Matrix(Rationals(), Hquo_in_Hsub);
+    // make it integral
+    Equo := Matrix(Integers(), Equo*Denominator(Equo));
+    f`integral_homology_quo := <Hquo_in_Hsub*Hsub_in_Bf, Equo>;
+    f`homology_quo_in_sub := Hsub_in_Hquo;
   end if;
-  basis_in_Bf, Einbasis := Explode(f`integral_homology_subquo[Quotient select 2 else 1]);
+  return Explode(f`integral_homology_quo);
+end intrinsic;
+
+
+// TODO: clarify that in the paper we write things with a right action, i.e. the map F^m -> F^n is represented by a n x m matrix
+// However, for purposes of efficiency Magma prefers the other way around
+intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt, AlgMatElt
+{ Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
+  sic := Quotient select IntegralHomologyQuo else IntegralHomologySub;
+  basis_in_Bf, Einbasis := sic(f);
   if MaximalEnd then
     Rtomax := IsogenyToMaximalEndomomorphism(f : Quotient:=Quotient);
     basis_in_Bf := Rtomax*basis_in_Bf;
@@ -184,22 +215,27 @@ end intrinsic;
 
 intrinsic HeckeAlgebraIntegralBasis(f : Quotient:=false, MaximalEnd:=false) -> SeqEnum[AlgMatElt]
 { A sequence of matrices that form Z-basis for the Hecke ring associated to A_f ^quo/sub }
+  idx := Quotient select 2 else 1;
   if not assigned f`hecke_ring_subquo then
+    f`hecke_ring_subquo := [];
+  end if;
+  if not IsDefined(f`hecke_ring_subquo, idx) then
     OH, HtoOH := HeckeEigenvalueRing(f);
     n, an := PrimitiveHeckeOperator(f);
-    Tns := [IntegralHeckeOperatorNew(f, n : Quotient:=q) : q in [false, true]];
+    Tn := IntegralHeckeOperatorNew(f, n : Quotient:=Quotient);
     // this is a primitive element for the field, but perhaps not for the ring, see for example 94.2.a.b where a3 = 2sqrt(2)
     require Degree(OH) eq 2: "At the moment only implemented for dimension 2"; // we could also check for the order to be monogenic for higher degree, but further changes are needed below
     // an = a + b*OH.2
     a, b := Explode(ChangeUniverse(Eltseq(HtoOH(an)), Integers()));
     assert (HtoOH(an) - a) div b eq OH.2;
-    assert &and[&and[elt mod b eq 0 : elt in Eltseq(Tn - a)] : Tn in Tns];
-    Rs := [(Tn - a) div b : Tn in Tns];
-    f`hecke_ring_subquo := [[IdentityMatrix(Integers(), Nrows(R)), R] : R in Rs];
+    assert &and[elt mod b eq 0 : elt in Eltseq(Tn - a)];
+    R := (Tn - a) div b;
+    f`hecke_ring_subquo[idx] := [IdentityMatrix(Integers(), Nrows(R)), R];
   end if;
   if not MaximalEnd then
-    return f`hecke_ring_subquo[Quotient select 2 else 1];
+    return f`hecke_ring_subquo[idx];
   else
+    // IsogenyToMaximalEndomomorphism computes the new HeckeRing
     _, H := IsogenyToMaximalEndomomorphism(f : Quotient:=Quotient);
     return H;
   end if;
@@ -209,18 +245,22 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
 {
   Retun the isogeny A -> A_max where End(A_max) := MaximalOrder(End(A) = HeckeAlgebraIntegralBasis(A) ) and A is the subvariety (or quotient) of J_0(N) associated to f, and the HeckeAlgebraIntegralBasis
 }
+  idx := Quotient select 2 else 1;
   if not assigned f`maxend_subquo then
+    f`maxend_subquo := [];
+    OH := HeckeEigenvalueRing(f);
+  end if;
+  if not IsDefined(f`maxend_subquo, idx) then
     OH := HeckeEigenvalueRing(f);
     require Degree(OH) eq 2 : "Only implemented for the case that the hecke ring has dimension two";
     g := 2;
-    Hs := [HeckeAlgebraIntegralBasis(f : Quotient:=q) : q in [false, true]];
+    H := HeckeAlgebraIntegralBasis(f : Quotient:=Quotient);
     if IsMaximal(OH) then
-      f`maxend_subquo := [ <IdentityMatrix(Integers(), 2*g), elt> : elt in Hs];
+      f`maxend_subquo[idx] := <IdentityMatrix(Integers(), 2*g), H>;
     else
-      gens := [elt[2] : elt in Hs];
-      minpoly := MinimalPolynomial(gens[1]); // gens have the same minimal polynomial
+      gen := H[2];
+      minpoly := MinimalPolynomial(gen);
       K<a> := NumberField(minpoly);
-
 
       // Now we compute the isogeny R, such that P*R is an abelian variety with maximal order
       D:= Discriminant(Integers(K));
@@ -228,42 +268,40 @@ intrinsic IsogenyToMaximalEndomomorphism(f : Quotient:=false) -> AlgMatElt, SeqE
       sqrtDpoly := x^2 - D;
       rts := Roots(sqrtDpoly, K);
       rt := rts[1][1];
-      f`maxend_subquo := [];
-      for gen in gens do // now we handle the subvariety/quotient independently
-        den := LCM([Denominator(c) : c in Eltseq(rt)]);
-        // den * Sqrt(D)
-        sqrtD := &+[Numerator(c)*(den div Denominator(c))*gen^(i-1) : i->c in Eltseq(rt)];
-        // den(D + Sqrt(D))
-        DpSqrtD := den*D*gen^0 + sqrtD;
-        assert BaseRing(DpSqrtD) cmpeq Integers();
 
-        // right kernel of [2, D+Sqrt(D)] = right kernel of [den*2, den*(D+Sqrt(D))]
-        kernel := Transpose(KernelMatrix(Transpose(HorizontalJoin(den*2*gen^0, DpSqrtD))));
-        // REMOVE: unused when when 2.28-3 arrives
-        S, T, unused := SmithForm(Matrix(Integers(), kernel));
-        assert Submatrix(S, 1, 1, 4, 4) eq 1;
-        assert Submatrix(S, 5, 1, 4, 4) eq 0;
-        Tinv := T^-1;
+      den := LCM([Denominator(c) : c in Eltseq(rt)]);
+      // den * Sqrt(D)
+      sqrtD := &+[Numerator(c)*(den div Denominator(c))*gen^(i-1) : i->c in Eltseq(rt)];
+      // den(D + Sqrt(D))
+      DpSqrtD := den*D*gen^0 + sqrtD;
+      assert BaseRing(DpSqrtD) cmpeq Integers();
 
-        // we now should compute a matrix R in M_2g(ZZ)
-        // such that P2 = P*R, where End(P2) = ZZ[(D + Sqrt(D))/2]
-        A := Submatrix(Tinv, 1, 5, 4, 4);
-        B := Submatrix(Tinv, 5, 5, 4, 4);
-        // The columns of Rtomax tell us how to write
-        // the integral homology of A_max in terms of the integral homology of A
-        // thus for consistency we store and return the transpose
-        Rtomax := den*2*A + DpSqrtD*B;
+      // right kernel of [2, D+Sqrt(D)] = right kernel of [den*2, den*(D+Sqrt(D))]
+      kernel := Transpose(KernelMatrix(Transpose(HorizontalJoin(den*2*gen^0, DpSqrtD))));
+      // REMOVE: unused when when 2.28-3 arrives
+      S, T, unused := SmithForm(Matrix(Integers(), kernel));
+      assert Submatrix(S, 1, 1, 4, 4) eq 1;
+      assert Submatrix(S, 5, 1, 4, 4) eq 0;
+      Tinv := T^-1;
 
-        newDpSqrtD := Matrix(Integers(), R^-1*DpSqrtD*R) where R:=Matrix(Rationals(), Rtomax);
-        assert &and[elt mod 2 eq 0 : elt in Eltseq(newDpSqrtD)];
-        newgen := Matrix(Integers(), newDpSqrtD div (2*den));
-        assert IsMaximal(EquationOrder(MinimalPolynomial(newgen)));
-        newH := LLL([IdentityMatrix(Integers(), 2*g), newgen]);
-        Append(~f`maxend_subquo, <Transpose(Rtomax), newH>);
-      end for;
+      // we now should compute a matrix R in M_2g(ZZ)
+      // such that P2 = P*R, where End(P2) = ZZ[(D + Sqrt(D))/2]
+      A := Submatrix(Tinv, 1, 5, 4, 4);
+      B := Submatrix(Tinv, 5, 5, 4, 4);
+      // The columns of Rtomax tell us how to write
+      // the integral homology of A_max in terms of the integral homology of A
+      // thus for consistency we store and return the transpose
+      Rtomax := den*2*A + DpSqrtD*B;
+
+      newDpSqrtD := Matrix(Integers(), R^-1*DpSqrtD*R) where R:=Matrix(Rationals(), Rtomax);
+      assert &and[elt mod 2 eq 0 : elt in Eltseq(newDpSqrtD)];
+      newgen := Matrix(Integers(), newDpSqrtD div (2*den));
+      assert IsMaximal(EquationOrder(MinimalPolynomial(newgen)));
+      newH := LLL([IdentityMatrix(Integers(), 2*g), newgen]);
+      f`maxend_subquo[idx] := <Transpose(Rtomax), newH>;
     end if;
   end if;
-  return Explode(f`maxend_subquo[Quotient select 2 else 1]);
+  return Explode(f`maxend_subquo[idx]);
 end intrinsic;
 
 
