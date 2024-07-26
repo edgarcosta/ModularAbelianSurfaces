@@ -46,6 +46,7 @@ function Core(label, prec : debug := false);
   res := [* *];
   for quosat in CartesianPower([false, true], 2) do
     Quotient, MaximalEnd := Explode(quosat);
+    if Quotient then continue end if; // we decided that the quotient computation is too expensive
     R := IsogenyFromSub(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
     if debug then
       localres := RationalGenus2Curves(f : Precision:=prec, Quotient:=Quotient, MaximalEnd:=MaximalEnd, OnlyOne:=true);
