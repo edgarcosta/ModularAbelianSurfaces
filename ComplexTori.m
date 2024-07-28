@@ -155,12 +155,12 @@ Return all principal polarizations on Omega() in the span of B := [B_1, B_2] up 
   return PrincipalPolarizations(func<|Omega>, B);
 end intrinsic;
 
-intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum[AlgMAtElt] 
+intrinsic RationalPrincipalPolarizations(Omega::ModMatFldElt, E::AlgMatElt) -> SeqEnum[AlgMatElt]
 { All rational principal polarizations for Omega with the rational pairing E}
     return PrincipalPolarizations(Omega, [elt[2] : elt in RationalSelfDualHomomorphisms(Omega, E)]);
 end intrinsic;
 
-intrinsic RationalPrincipalPolarizations(f::ModSym : Precision:=0, Quotient:=false, MaximalEnd:=false ) -> SeqEnum[AlgMAtElt]
+intrinsic RationalPrincipalPolarizations(f::ModSym : Precision:=0, Quotient:=false, MaximalEnd:=false ) -> SeqEnum[AlgMatElt]
 {
   All rational principal polarizations for Af (or quotient) of J_0(N) associated to f.
   If MaximalEnd is true, then it is replaced by the isogenous variety such that End(Af) is maximal.
