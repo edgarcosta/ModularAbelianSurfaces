@@ -17,9 +17,11 @@ declare attributes ModSym:
 intrinsic IsogenyFromSub(f : Quotient:=false, MaximalEnd:=false) -> AlgMatElt
 { The isogeny between subvariety and A', where A' can be the subvariaty/quotient variety of J_0(N) associated to f (with maximal endomorphism ring), i.e., how to write the (integral homology) basis for the quotient in terms of the basis for the subvariety}
   R := IdentityMatrix(Integers(), Dimension(f));
-  if Quotient and not assigned f`homology_quo_in_sub then
-    // sub to quotient
-    _ := IntegralHomologyQuo(f);
+  if Quotient then
+    if not assigned f`homology_quo_in_sub then
+      // sub to quotient
+      _ := IntegralHomologyQuo(f);
+    end if;
     R := f`homology_quo_in_sub;
   end if;
   if MaximalEnd then
