@@ -133,6 +133,16 @@ intrinsic IntegralHomologySub(f::ModSym) -> AlgMatElt, AlgMatElt, AlgMatElt
 end intrinsic;
 
 
+intrinsic LatticeSub(f::ModSym) -> Lat, Map
+{ A basis over the integers for the integral modular symbols in the VectorSpace(f), i.e., H_1(A_f, \Z).
+This matches Lattice(f), but via a different algorithm }
+  Hsub_in_Bf, Esub, Hsub_in_CS := IntegralHomologySub(f);
+  fromCStoAmbient := IntegralBasisCuspidalAmbient(f)[3];
+  L := Lattice(Hsub_in_CS*fromCStoAmbient);
+  return L, hom<L->AmbientSpace(f) | x :-> f!x>;
+end intrinsic;
+
+
 intrinsic IntegralHomologyQuo(f::ModSym) -> AlgMatElt, AlgMatElt
 { Change of basis matrix from Basis(f) to the integral homology basis for the abelian quotient of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
   if not assigned f`integral_homology_quo then
