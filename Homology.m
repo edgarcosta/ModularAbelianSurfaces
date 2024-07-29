@@ -123,7 +123,7 @@ intrinsic IntegralHomologySub(f::ModSym) -> AlgMatElt, AlgMatElt, AlgMatElt
     vtime HomologyModularSymbols:
     Ef := IntersectionPairing(f);
     Esub := S*Ef*Transpose(S) where S:=Matrix(Rationals(), Hsub_in_Bf);
-    // make it integral
+    // make it inte/gral
     Esub := Matrix(Integers(), Esub*Denominator(Esub));
 
     f`integral_homology_sub := <Hsub_in_Bf, Esub, Hsub>;
@@ -155,11 +155,15 @@ intrinsic IntegralHomologyQuo(f::ModSym) -> AlgMatElt, AlgMatElt
     assert Rank(M) eq desired_rank;
     vprintf HomologyModularSymbols: "IntegralHomologyQuo: M = %o x %o matrix\n", Nrows(M), Ncols(M);
 
-    vprintf HomologyModularSymbols: "IntegralHomologyQuo: Computing Hquo: HermiteForm(M)...";
+
+    vprintf HomologyModularSymbols: "IntegralHomologyQuo: Computing Hquo: HermiteForm(Transpose(M))...";
     vtime HomologyModularSymbols:
-    // Q*M = a matrix where the last 2g rows are zero
-    H, Q := HermiteForm(M);
-    assert IsZero(Submatrix(H, Nrows(H) - Dimension(f) + 1, 1, Dimension(f), Ncols(H)));
+    H, Q := HermiteForm(Transpose(M));
+    H := Transpose(H);
+    Q := Transpose(Q);
+    // Q is a 2g(N) x 2g(N) matrix
+    // M * Q = H, a matrix where the last 2g columns are zero
+    assert IsZero(Submatrix(H, 1, Ncols(H) - Dimension(f)+1, Nrows(H), Dimension(f)));
     //this is the projection of H_sub in (H/If H)_free
     Hsub_in_Hquo := Hsub*Submatrix(Q, 1, Ncols(Q) - Dimension(f) + 1, Nrows(Q), Dimension(f));
 
