@@ -31,6 +31,7 @@ intrinsic IsogenyFromSub(f : Quotient:=false, MaximalEnd:=false) -> AlgMatElt
 end intrinsic;
 
 
+
 intrinsic IntegralBasisCuspidalAmbient(f::ModSym) -> Tup
   {returns tripe <S, S^-1, fromCStoAmbient> as matrices where S: IntegralBasis(CS) -> Basis(CS),
   and fromCStoAmbient: IntegralBasis(CS) -> AmbientSpace(f)}
@@ -133,14 +134,8 @@ intrinsic IntegralHomologySub(f::ModSym) -> AlgMatElt, AlgMatElt, AlgMatElt
 end intrinsic;
 
 
-intrinsic LatticeSub(f::ModSym) -> Lat, Map
-{ A basis over the integers for the integral modular symbols in the VectorSpace(f), i.e., H_1(A_f, \Z).
-This matches Lattice(f), but via a different algorithm }
-  Hsub_in_Bf, Esub, Hsub_in_CS := IntegralHomologySub(f);
-  fromCStoAmbient := IntegralBasisCuspidalAmbient(f)[3];
-  L := Lattice(Hsub_in_CS*fromCStoAmbient);
-  return L, hom<L->AmbientSpace(f) | x :-> f!x>;
-end intrinsic;
+
+
 
 
 intrinsic IntegralHomologyQuo(f::ModSym) -> AlgMatElt, AlgMatElt
@@ -187,7 +182,7 @@ intrinsic IntegralHomologyQuo(f::ModSym) -> AlgMatElt, AlgMatElt
     Equo := S*Esub*Transpose(S) where S:=Matrix(Rationals(), Hquo_in_Hsub);
     // make it integral
     Equo := Matrix(Integers(), Equo*Denominator(Equo));
-    f`integral_homology_quo := <Hquo_in_Hsub*Hsub_in_Bf, Equo>;
+    f`integral_homology_quo := <Hquo_in_Hsub*Hsub_in_Bf, Equo, Hquo_in_Hsub*Hsub>;
     f`homology_quo_in_sub := Hsub_in_Hquo;
   end if;
   return Explode(f`integral_homology_quo);
@@ -199,16 +194,30 @@ end intrinsic;
 intrinsic IntegralHomology(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt, AlgMatElt
 { Change of basis matrix from Basis(f)  to the integral homology basis for the abelian subvariety (or quotient) of J_0(N) associated to f and the intersection pairing with the respect to the integral basis}
   sic := Quotient select IntegralHomologyQuo else IntegralHomologySub;
-  basis_in_Bf, Einbasis := sic(f);
+  basis_in_Bf, Einbasis, basis_in_CS := sic(f);
   if MaximalEnd then
     Rtomax := IsogenyToMaximalEndomomorphism(f : Quotient:=Quotient);
     basis_in_Bf := Rtomax*basis_in_Bf;
+    basis_in_CS := Rtomax*basis_in_CS;
     Einbasis := Rtomax*Einbasis*Transpose(Rtomax);
   end if;
-  return basis_in_Bf, Einbasis;
+  return basis_in_Bf, Einbasis, basis_in_CS;
 end intrinsic;
 
 
+intrinsic HomologyLattice(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Lat, Map
+{ A basis over the integers for the integral modular symbols H_1(A_f, \Z)for the abelian subvariety (or quotient) of J_0(N) associated to f.
+The default behaviour of this intrinsic returns the same lattice as Lattice(f), but via a different algorithm }
+  _, _, basis_in_CS := IntegralHomologySub(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  fromCStoAmbient := IntegralBasisCuspidalAmbient(f)[3];
+  L := Lattice(basis_in_CS*fromCStoAmbient);
+  return L, hom<L->AmbientSpace(f) | x :-> f!x>;
+end intrinsic;
+
+intrinsic IntersectionPairingIntegral(f::ModSym : Quotient:=false, MaximalEnd:=false) -> AlgMatElt
+{ The intersection pairing matrix on the basis for the integral homology of A_f.}
+  return E where _, E := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+end intrinsic;
 
 intrinsic IntegralHeckeOperatorNew(f, n : Quotient:=false) -> AlgMatElt
 { A matrix representing the nth Hecke operator with respect to the integral homology basis M }
