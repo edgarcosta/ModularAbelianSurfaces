@@ -208,7 +208,7 @@ end intrinsic;
 intrinsic HomologyLattice(f::ModSym : Quotient:=false, MaximalEnd:=false) -> Lat, Map
 { A basis over the integers for the integral modular symbols H_1(A_f, \Z)for the abelian subvariety (or quotient) of J_0(N) associated to f.
 The default behaviour of this intrinsic returns the same lattice as Lattice(f), but via a different algorithm }
-  _, _, basis_in_CS := IntegralHomologySub(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
+  _, _, basis_in_CS := IntegralHomology(f : Quotient:=Quotient, MaximalEnd:=MaximalEnd);
   fromCStoAmbient := IntegralBasisCuspidalAmbient(f)[3];
   L := Lattice(basis_in_CS*fromCStoAmbient);
   return L, hom<L->AmbientSpace(f) | x :-> f!x>;
