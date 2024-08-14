@@ -176,10 +176,11 @@ intrinsic PeriodMatrixSubMagma(f::ModSym : Precision:=0) -> ModMatFldElt
   CC := ComplexFieldExtra(prec);
   // Change convention
   P := Transpose(ChangeRing(P, CC));
-  g := #Rows(P);
-  P1 := Submatrix(P, 1, 1, g, g);
-  P2 := Submatrix(P, 1, g + 1,g, g);
-  P := HorizontalJoin(P2, P1);
   return P;
+//  g := #Rows(P);
+//  P1 := Submatrix(P, 1, 1, g, g);
+//  P2 := Submatrix(P, 1, g + 1,g, g);
+//  P := HorizontalJoin(P2, P1);
+//  return P;
 end intrinsic;
 
