@@ -166,6 +166,7 @@ intrinsic PeriodMatrix(f::ModSym : Precision:=0, Quotient:=false, MaximalEnd:=fa
   return P*Matrix(BaseRing(P),  Transpose(basis)), E;
 end intrinsic;
 
+/* no longer used
 intrinsic PeriodMatrixSubMagma(f::ModSym : Precision:=0) -> ModMatFldElt
   { Compute the period matrix associated to f A_f^sub via Magma's computation of integral homology }
   prec := Precision; // the optonal argument
@@ -183,4 +184,5 @@ intrinsic PeriodMatrixSubMagma(f::ModSym : Precision:=0) -> ModMatFldElt
 //  P := HorizontalJoin(P2, P1);
 //  return P;
 end intrinsic;
+*/
 
