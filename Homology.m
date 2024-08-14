@@ -106,6 +106,7 @@ intrinsic IntegralHomologySub(f::ModSym) -> AlgMatElt, AlgMatElt, AlgMatElt
     vtime HomologyModularSymbols:
     // Hsub represents the Z^d = H[If] \hookrightarrow H = Z^#B = CuspidalSubspace(A)
     // where If := Ker (TT -> Z[...an(f)...]) T_n -> an(f), and min poly of an(f) is h
+    // TODO: change this to lattice?
     Hsub := KernelMatrix(H);
 
     vprintf HomologyModularSymbols: "IntegralHomologySub: H[If] in terms of Basis(f)...";
@@ -118,7 +119,9 @@ intrinsic IntegralHomologySub(f::ModSym) -> AlgMatElt, AlgMatElt, AlgMatElt
     assert Submatrix(S, 1,1, Dimension(f), Dimension(f)) eq 1;
     // how to write Hsub basis in terms of Basis(f)
     // IntegralBasis(f) -> Basis(f)
+    // TODO: change this to lattice?
     Hsub_in_Bf := Submatrix(S, 1,1 + Dimension(f), Dimension(f), Dimension(f));
+
 
 
     // now compute the polarization
